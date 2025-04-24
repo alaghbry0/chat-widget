@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>اختبار Chat Widget</title>
+  <style>
+    body { font-family: sans-serif; padding: 40px; text-align: center; }
+    h1 { margin-bottom: 40px; }
+  </style>
+</head>
+<body>
+
+  <h1>صفحة اختبار واجهة الدردشة</h1>
+
+  <!-- 1) تضمين سكريبت الويجت -->
+  <script src="./widget.js"></script>
+
+  <!-- 2) استدعاء التهيئة -->
+  <script>
+    window.ChatWidget.init({
+      projectId: 'TEST_PROJECT',
+      apiUrl: 'http://localhost:8080/chat/stream',
+      theme: 'light',
+      position: 'bottom-right',
+      direction: 'rtl'
+    });
+  </script>
+
+</body>
+</html>
