@@ -60,6 +60,7 @@ const styles = `
   }
 
   .chat-container {
+    z-index: 9999;
     position: fixed;
     display: flex;
     flex-direction: column;
@@ -215,7 +216,7 @@ const styles = `
     font-size: 12px;
     color: var(--text-secondary);
   }
-`;
+;
 
 class ChatWidget extends HTMLElement {
   constructor() {
@@ -259,7 +260,7 @@ class ChatWidget extends HTMLElement {
     styleEl.textContent = styles;
 
     const template = document.createElement('template');
-    template.innerHTML = `
+    template.innerHTML =
       <div class="chat-container">
         <div class="chat-header">
           <chat-avatar
@@ -294,7 +295,7 @@ class ChatWidget extends HTMLElement {
       </div>
 
       <chat-button></chat-button>
-    `;
+    ;
 
     this.shadowRoot.appendChild(styleEl);
     this.shadowRoot.appendChild(template.content.cloneNode(true));
@@ -397,83 +398,87 @@ class ChatWidget extends HTMLElement {
   }
 
   _sendMessage() {
-    const message = this.chatInput.value.trim();
-    if (!message) return;
+  const message = this.chatInput.value.trim();
+  if (!message) return;
 
-    // إضافة رسالة المستخدم
-    this._addMessage({
-      content: message,
-      sender: 'user'
-    });
+  // إضافة رسالة المستخدم
+  this._addMessage({
+    content: message,
+    sender: 'user'
+  });
 
-    // مسح حقل الإدخال
-    this.chatInput.value = '';
-    this.sendButton.disabled = true;
+  // مسح حقل الإدخال
+  this.chatInput.value = '';
+  this.sendButton.disabled = true;
 
-    // إظهار مؤشر الكتابة
-    this._showTypingIndicator();
+  // إظهار مؤشر الكتابة
+  this._showTypingIndicator();
 
-    // إرسال الرسالة إلى الخادم
-    const apiUrl = this.getAttribute('api-url');
-    const projectId = this.getAttribute('project-id');
+  // إرسال الرسالة إلى الخادم
+  const apiUrl = this.getAttribute('api-url');
+  const projectId = this.getAttribute('project-id');
 
-    this.chatService.sendMessage(apiUrl, {
-      message,
-      session_id: this.sessionId,
-      project_id: projectId
-    })
-    .then(stream => {
-      let fullResponse = '';
+  console.log('Sending message to ' + apiUrl + ' with projectId: ' + projectId + ', sessionId: ' + this.sessionId);
 
-      stream.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
+  this.chatService.sendMessage(apiUrl, {
+    message,
+    session_id: this.sessionId,
+    project_id: projectId
+  })
+  .then(stream => {
+    console.log("Stream connection established", stream);
+    let fullResponse = '';
 
-          // معالجة أنواع الأحداث المختلفة
-          if (event.type === 'chunk') {
-            fullResponse += data.content;
-          } else if (event.type === 'end') {
-            // إخفاء مؤشر الكتابة عند انتهاء الرسالة
-            this._hideTypingIndicator();
+    stream.onmessage = (event) => {
+      console.log("Received message event:", event);
+      try {
+        const data = JSON.parse(event.data);
 
-            // إضافة الرسالة الكاملة
-            if (fullResponse) {
-              this._addMessage({
-                content: fullResponse,
-                sender: 'bot'
-              });
-            }
-          } else if (event.type === 'error') {
-            console.error('Error from chat service:', data.message);
-            this._hideTypingIndicator();
+        // معالجة أنواع الأحداث المختلفة
+        if (event.type === 'chunk') {
+          fullResponse += data.content;
+        } else if (event.type === 'end') {
+          // إخفاء مؤشر الكتابة عند انتهاء الرسالة
+          this._hideTypingIndicator();
+
+          // إضافة الرسالة الكاملة
+          if (fullResponse) {
             this._addMessage({
-              content: 'عذراً، حدث خطأ أثناء معالجة طلبك. يرجى المحاولة مرة أخرى.',
+              content: fullResponse,
               sender: 'bot'
             });
           }
-        } catch (err) {
-          console.error('Error parsing SSE message:', err);
+        } else if (event.type === 'error') {
+          console.error('Error from chat service:', data.message);
+          this._hideTypingIndicator();
+          this._addMessage({
+            content: 'عذراً، حدث خطأ أثناء معالجة طلبك. يرجى المحاولة مرة أخرى.',
+            sender: 'bot'
+          });
         }
-      };
+      } catch (err) {
+        console.error('Error parsing SSE message:', err, event.data);
+      }
+    };
 
-      stream.onerror = (err) => {
-        console.error('SSE Error:', err);
-        this._hideTypingIndicator();
-        this._addMessage({
-          content: 'عذراً، حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.',
-          sender: 'bot'
-        });
-      };
-    })
-    .catch(err => {
-      console.error('Failed to send message:', err);
+    stream.onerror = (err) => {
+      console.error('SSE Error:', err);
       this._hideTypingIndicator();
       this._addMessage({
-        content: 'عذراً، تعذر الاتصال بالخادم. يرجى التحقق من اتصالك والمحاولة مرة أخرى.',
+        content: 'عذراً، حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.',
         sender: 'bot'
       });
+    };
+  })
+  .catch(err => {
+    console.error('Failed to send message:', err);
+    this._hideTypingIndicator();
+    this._addMessage({
+      content: 'عذراً، تعذر الاتصال بالخادم. يرجى التحقق من اتصالك والمحاولة مرة أخرى.',
+      sender: 'bot'
     });
-  }
+  });
+}
 
   _showTypingIndicator() {
     this.isTyping = true;
@@ -526,17 +531,16 @@ class ChatWidget extends HTMLElement {
   }
 
   toggleChat() {
-    this.isOpen = !this.isOpen;
-    if (this.isOpen) {
-      this.chatContainer.classList.add('open');
-      // حفظ حالة النافذة
-      localStorage.setItem('chatWidgetOpen', 'true');
-    } else {
-      this.chatContainer.classList.remove('open');
-      // حفظ حالة النافذة
-      localStorage.setItem('chatWidgetOpen', 'false');
-    }
+  console.log('🔘 toggleChat fired! isOpen=', this.isOpen);
+  this.isOpen = !this.isOpen;
+  if (this.isOpen) {
+    this.chatContainer.classList.add('open');
+    localStorage.setItem('chatWidgetOpen', 'true');
+  } else {
+    this.chatContainer.classList.remove('open');
+    localStorage.setItem('chatWidgetOpen', 'false');
   }
+}
 
   _scrollToBottom() {
     setTimeout(() => {

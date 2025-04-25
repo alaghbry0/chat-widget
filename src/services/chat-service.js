@@ -8,50 +8,11 @@ export class ChatService {
    * @param {Object} data - بيانات الرسالة للإرسال
    * @returns {EventSource} - موجّه أحداث SSE
    */
-  sendMessage(url, data) {
-    return new Promise((resolve, reject) => {
-      // التحقق من دعم المتصفح لـ EventSource
-      if (!window.EventSource) {
-        reject(new Error('المتصفح الحالي لا يدعم EventSource. يرجى تحديث المتصفح.'));
-        return;
-      }
-
-      // إنشاء عنوان URL للاتصال مع تضمين المعاملات
-      const queryParams = new URLSearchParams();
-      for (const key in data) {
-        queryParams.append(key, data[key]);
-      }
-
-      const fullUrl = `${url}?${queryParams.toString()}`;
-
-      try {
-        // إنشاء اتصال SSE
-        const eventSource = new EventSource(fullUrl);
-
-        // التحقق من نجاح الاتصال
-        eventSource.onopen = () => {
-          resolve(eventSource);
-        };
-
-        // معالجة أخطاء الاتصال
-        eventSource.onerror = (error) => {
-          eventSource.close();
-          reject(error);
-        };
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  /**
-   * إرسال رسالة باستخدام طريقة POST (كبديل لـ SSE)
-   * عندما لا يتوفر دعم SSE أو عند الحاجة لارسال بيانات POST
-   * @param {string} url
-   * @param {Object} data
-   */
-  async postMessage(url, data) {
+  async sendMessage(url, data) {
     try {
+      console.log("Sending message to:", url, data);
+
+      // استخدام fetch مع POST بدلاً من EventSource
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -61,64 +22,144 @@ export class ChatService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(HTTP error! status: ${response.status});
       }
 
+      // إنشاء قارئ دفق لمعالجة استجابة SSE
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
-      return this._processStream(reader, decoder);
+      // إنشاء كائن مماثل لـ EventSource للتوافق مع بقية الكود
+      const eventSourceMock = {
+        listeners: {
+          message: [],
+          error: [],
+          open: []
+        },
+
+        onmessage: null,
+        onerror: null,
+        onopen: null,
+
+        addEventListener(event, callback) {
+          this.listeners[event].push(callback);
+        },
+
+        removeEventListener(event, callback) {
+          const index = this.listeners[event].indexOf(callback);
+          if (index !== -1) {
+            this.listeners[event].splice(index, 1);
+          }
+        },
+
+        close() {
+          reader.cancel();
+        }
+      };
+
+      // قراءة الدفق وإطلاق الأحداث
+      this._processStream(reader, decoder, eventSourceMock);
+
+      // تشغيل حدث open
+      setTimeout(() => {
+        if (eventSourceMock.onopen) {
+          eventSourceMock.onopen();
+        }
+      }, 0);
+
+      return eventSourceMock;
     } catch (error) {
-      console.error('Error in postMessage:', error);
+      console.error('Error in sendMessage:', error);
       throw error;
     }
   }
 
   /**
-   * معالجة الدفق
+   * معالجة دفق SSE
    * @param {ReadableStreamDefaultReader} reader
    * @param {TextDecoder} decoder
+   * @param {Object} eventSource
    */
-  async _processStream(reader, decoder) {
+  async _processStream(reader, decoder, eventSource) {
     let buffer = '';
 
-    const processEvents = async () => {
-      const { value, done } = await reader.read();
-      if (done) return null;
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
 
-      buffer += decoder.decode(value, { stream: true });
+        if (done) {
+          console.log("Stream ended");
+          break;
+        }
 
-      // معالجة الأحداث
-      const events = buffer.split('\n\n');
-      buffer = events.pop() || '';
+        // إضافة البيانات الجديدة إلى المخزن المؤقت
+        buffer += decoder.decode(value, { stream: true });
 
-      return events.map(event => {
-        const lines = event.split('\n');
-        const parsedEvent = {};
-
-        lines.forEach(line => {
-          if (line.startsWith('event: ')) {
-            parsedEvent.type = line.slice(7).trim();
-          } else if (line.startsWith('data: ')) {
-            try {
-              parsedEvent.data = JSON.parse(line.slice(6).trim());
-            } catch (e) {
-              parsedEvent.data = line.slice(6).trim();
-            }
-          }
-        });
-
-        return parsedEvent;
-      });
-    };
-
-    return {
-      async next() {
-        return await processEvents();
-      },
-      close() {
-        reader.cancel();
+        // معالجة الأحداث المكتملة من المخزن المؤقت
+        const lines = buffer.split('\n');
+        buffer = this._processEventLines(lines, buffer, eventSource);
       }
-    };
+    } catch (error) {
+      console.error('Error processing stream:', error);
+      if (eventSource.onerror) {
+        eventSource.onerror(error);
+      }
+    }
+  }
+
+  /**
+   * معالجة سطور الأحداث وإطلاق أحداث المستمع
+   */
+  _processEventLines(lines, buffer, eventSource) {
+    let eventType = 'message';
+    let data = '';
+    let eventIdBuffer = '';
+    let remainingBuffer = '';
+
+    for (let i = 0; i < lines.length - 1; i++) {
+      const line = lines[i];
+
+      // تجاوز السطور الفارغة
+      if (line === '') {
+        // نهاية الحدث، إطلاق حدث
+        if (data) {
+          // إنشاء كائن الحدث
+          const event = {
+            data,
+            type: eventType,
+            lastEventId: eventIdBuffer
+          };
+
+          // استدعاء معالج الحدث المقابل
+          if (eventSource.onmessage && eventType === 'message') {
+            eventSource.onmessage(event);
+          } else if (eventSource['on' + eventType]) {
+            eventSource['on' + eventType](event);
+          }
+
+          // إعادة ضبط للحدث التالي
+          eventType = 'message';
+          data = '';
+        }
+        continue;
+      }
+
+      // تحليل سطر الحدث
+      if (line.startsWith('event:')) {
+        eventType = line.slice(6).trim();
+      } else if (line.startsWith('data:')) {
+        data = line.slice(5).trim();
+      } else if (line.startsWith('id:')) {
+        eventIdBuffer = line.slice(3).trim();
+      } else if (line.startsWith(':')) {
+        // تعليق، تجاهل
+      } else {
+        // حفظ السطور غير المكتملة
+        remainingBuffer += line + '\n';
+      }
+    }
+
+    // إرجاع أي سطور متبقية للمعالجة اللاحقة
+    return remainingBuffer + lines[lines.length - 1];
   }
 }

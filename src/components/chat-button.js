@@ -85,18 +85,15 @@ class ChatButton extends HTMLElement {
     this.bubbleElement = this.shadowRoot.querySelector('.chat-bubble');
   }
 
-  connectedCallback() {
-    // إضافة مستمع الحدث عند النقر
-    this.bubbleElement.addEventListener('click', () => {
-      // إرسال حدث النقر للأعلى
-      this.dispatchEvent(new CustomEvent('click'));
+ connectedCallback() {
+     this.bubbleElement.addEventListener('click', () => {
+   // فقط إزالة النبضة عند الضغط
 
-      // إزالة تأثير النبض بعد النقر الأول
-      this.bubbleElement.classList.remove('pulse');
-    });
-  }
+   // لا حاجة الآن لإعادة dispatch لحدث "click" لأنّه يخرج تلقائياً للـ host
+ });
 
-  // تعيين موضع الزر بناءً على سمة الموضع
+  }  // ← قوس يغلق connectedCallback هنا
+
   attributeChangedCallback(name, oldValue, newValue) {
     if (name === 'position' && oldValue !== newValue) {
       if (newValue === 'bottom-left') {
@@ -114,5 +111,4 @@ class ChatButton extends HTMLElement {
   }
 }
 
-// تسجيل المكون
 customElements.define('chat-button', ChatButton);

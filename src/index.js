@@ -10,12 +10,12 @@ window.ChatWidget = {
       theme: 'light',
       position: 'bottom-right',
       welcomeMessage: 'مرحبًا بك! كيف يمكنني مساعدتك اليوم؟',
-      apiUrl: 'https://api.yourdomain.com/chat/stream',
+      apiUrl: 'https://exadoo-rxr9.onrender.com/bot/chat/stream',
       direction: 'rtl',
       avatar: '',
-      title: 'Chat Assistant',
+      title: 'Exaado Assistant',
       subtitle: 'Our virtual agent is here to help you',
-      poweredBy: 'Powered by AI'
+      poweredBy: 'Powered by EXAADO:exaado.com'
     };
 
     // دمج الخيارات مع الافتراضية
@@ -25,9 +25,12 @@ window.ChatWidget = {
     const chatWidget = document.createElement('chat-widget');
 
     // تعيين السمات
-    Object.keys(config).forEach(key => {
-      chatWidget.setAttribute(key, config[key]);
-    });
+    Object.entries(config).forEach(([key, value]) => {
+    if (value == null || value === '') return;  // نتجنّب السمات الفارغة
+    // حوّل camelCase إلى kebab-case
+    const attr = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+    chatWidget.setAttribute(attr, value);
+  });
 
     // إضافة المكون للصفحة
     document.body.appendChild(chatWidget);

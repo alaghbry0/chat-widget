@@ -18,7 +18,7 @@ class ChatMessage extends HTMLElement {
 
     // إعداد CSS
     const style = document.createElement('style');
-    style.textContent = `
+    style.textContent =
       :host {
         display: block;
         width: 100%;
@@ -121,35 +121,35 @@ class ChatMessage extends HTMLElement {
         padding-left: 24px;
         margin: 8px 0;
       }
-    `;
+    ;
 
     // معالجة محتوى الرسالة
     const processedContent = this._processMessageContent(content);
 
     // إنشاء هيكل المكون
     const messageElement = document.createElement('div');
-    messageElement.className = `message message-${sender}`;
+    messageElement.className = message message-${sender};
     messageElement.setAttribute('data-message-id', messageId);
 
     let avatarHTML = '';
     if (sender === 'bot') {
       if (avatar) {
-        avatarHTML = `<img class="avatar" src="${avatar}" alt="Bot Avatar">`;
+        avatarHTML = <img class="avatar" src="${avatar}" alt="Bot Avatar">;
       } else {
-        avatarHTML = `<div class="avatar">B</div>`;
+        avatarHTML = <div class="avatar">B</div>;
       }
     }
 
     const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const timeStr = ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')};
 
-    messageElement.innerHTML = `
+    messageElement.innerHTML =
       <div class="message-header">
         ${sender === 'bot' ? avatarHTML : ''}
       </div>
       <div class="message-content">${processedContent}</div>
       <div class="message-time">${timeStr}</div>
-    `;
+    ;
 
     // إضافة الأنماط والمحتوى للظل
     this.shadowRoot.appendChild(style);
@@ -169,15 +169,17 @@ class ChatMessage extends HTMLElement {
       '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
     );
 
-    // تحويل أكواد الماركداون البسيطة (مثل ``code``)
+    // تحويل أكواد الماركداون البسيطة (مثل `code)
     processed = processed.replace(
-      /`([^`]+)`/g,
+      /([^]+)/g,
       '<code>$1</code>'
     );
 
     // معالجة أكواد الماركداون متعددة الأسطر
     processed = processed.replace(
-      /```([^`]+)```/g,
+      /
+([^`]+)
+/g,
       '<pre><code>$1</code></pre>'
     );
 

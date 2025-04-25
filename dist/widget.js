@@ -88,18 +88,15 @@
       this.bubbleElement = this.shadowRoot.querySelector('.chat-bubble');
     }
 
-    connectedCallback() {
-      // إضافة مستمع الحدث عند النقر
-      this.bubbleElement.addEventListener('click', () => {
-        // إرسال حدث النقر للأعلى
-        this.dispatchEvent(new CustomEvent('click'));
+   connectedCallback() {
+       this.bubbleElement.addEventListener('click', () => {
+     // فقط إزالة النبضة عند الضغط
 
-        // إزالة تأثير النبض بعد النقر الأول
-        this.bubbleElement.classList.remove('pulse');
-      });
-    }
+     // لا حاجة الآن لإعادة dispatch لحدث "click" لأنّه يخرج تلقائياً للـ host
+   });
 
-    // تعيين موضع الزر بناءً على سمة الموضع
+    }  // ← قوس يغلق connectedCallback هنا
+
     attributeChangedCallback(name, oldValue, newValue) {
       if (name === 'position' && oldValue !== newValue) {
         if (newValue === 'bottom-left') {
@@ -117,7 +114,6 @@
     }
   }
 
-  // تسجيل المكون
   customElements.define('chat-button', ChatButton);
 
   // src/components/chat-message.js
@@ -140,6 +136,7 @@
 
       // إعداد CSS
       const style = document.createElement('style');
+      // --- بداية التعديل ---
       style.textContent = `
       :host {
         display: block;
@@ -150,6 +147,7 @@
         display: flex;
         flex-direction: column;
         max-width: 85%;
+        margin-bottom: 12px; /* إضافة هامش سفلي بين الرسائل */
         animation: fadeIn 0.3s ease-in-out;
       }
 
@@ -175,12 +173,15 @@
         justify-content: center;
         font-size: 14px;
         font-weight: bold;
+        flex-shrink: 0; /* منع الصورة الرمزية من التقلص */
       }
 
       .message-header {
         display: flex;
         align-items: center;
         margin-bottom: 4px;
+        /* فقط عرض الهيدر إذا كان المرسل هو البوت ولديه صورة رمزية */
+        ${sender === 'bot' ? '' : 'display: none;'}
       }
 
       .message-content {
@@ -189,6 +190,7 @@
         font-size: 14px;
         line-height: 1.4;
         position: relative;
+        word-wrap: break-word; /* لضمان التفاف النص الطويل */
       }
 
       .message-user .message-content {
@@ -203,6 +205,34 @@
         border-bottom-left-radius: 4px;
       }
 
+      /* وضع الصورة الرمزية بجانب المحتوى للـ bot */
+       .message-bot {
+           flex-direction: row; /* تغيير الاتجاه إلى صف */
+           align-items: flex-start; /* محاذاة العناصر في بداية المحور العمودي */
+       }
+       .message-bot .message-header {
+           margin-bottom: 0; /* إزالة الهامش السفلي من الهيدر */
+           margin-right: 8px; /* إضافة هامش يمين للصورة الرمزية */
+       }
+        /* إخفاء الصورة الرمزية من الهيدر لأننا سنضعها مباشرة في .message-bot */
+       .message-bot .message-header .avatar {
+           display: none;
+       }
+
+       .message-bot > .message-content {
+           /* لا حاجة لتغييرات هنا حاليًا */
+       }
+
+       .message-bot > .message-time {
+         margin-left: 36px; /* تحريك الوقت ليتناسب مع محتوى الرسالة (28px avatar + 8px margin) */
+         text-align: left;
+       }
+
+       .message-user > .message-time {
+         text-align: right;
+       }
+
+
       .message-time {
         font-size: 11px;
         color: var(--text-secondary, #666);
@@ -216,7 +246,8 @@
 
       /* تنسيق الروابط في الرسائل */
       .message-content a {
-        color: inherit;
+        /* استخدام لون مميز للروابط داخل رسائل البوت */
+        color: ${sender === 'bot' ? 'var(--primary-color, #007BFF)' : 'inherit'};
         text-decoration: underline;
       }
 
@@ -227,87 +258,151 @@
       /* تنسيق الأكواد البرمجية في الرسائل */
       .message-content pre {
         background-color: rgba(0, 0, 0, 0.05);
-        padding: 8px;
+        padding: 10px; /* زيادة الحشو */
         border-radius: 4px;
         overflow-x: auto;
         margin: 8px 0;
+        border: 1px solid rgba(0,0,0,0.1); /* إضافة حدود بسيطة */
       }
 
-      .message-content code {
-        font-family: monospace;
-        font-size: 13px;
+      .message-content code:not(pre > code) { /* تنسيق الكود المضمن فقط */
+         background-color: rgba(0,0,0,0.05);
+         padding: 2px 4px;
+         border-radius: 3px;
+         font-family: monospace;
+         font-size: 13px;
+       }
+      .message-content pre code { /* تنسيق الكود داخل <pre> */
+         background-color: transparent; /* بدون خلفية إضافية */
+         padding: 0;
+         border-radius: 0;
+         font-family: monospace;
+         font-size: 13px;
+         display: block; /* تأكد من أنه كتلة */
+         white-space: pre; /* الحفاظ على المسافات والأسطر */
       }
+
 
       /* تنسيق القوائم */
       .message-content ul, .message-content ol {
         padding-left: 24px;
         margin: 8px 0;
       }
-    `;
 
-      // معالجة محتوى الرسالة
+      /* تنسيق أزرار الإجراءات */
+      .action-button {
+        background-color: var(--primary-color, #007BFF);
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 15px; /* جعلها أكثر دائرية */
+        cursor: pointer;
+        font-size: 13px;
+        margin: 5px 5px 5px 0; /* إضافة هوامش */
+        transition: background-color 0.2s ease;
+        display: inline-block; /* جعلها تظهر بجانب بعضها البعض */
+      }
+
+      .action-button:hover {
+        background-color: var(--primary-color-dark, #0056b3); /* لون أغمق عند المرور */
+      }
+    `;
+      // --- نهاية التعديل ---
+
+      // معالجة محتوى الرسالة (تحويل الماركداون الأساسي)
       const processedContent = this._processMessageContent(content);
 
       // إنشاء هيكل المكون
       const messageElement = document.createElement('div');
+      // التأكد من وجود مسافة بين أسماء الفئات
       messageElement.className = `message message-${sender}`;
       messageElement.setAttribute('data-message-id', messageId);
 
+      // تحديد HTML للصورة الرمزية
       let avatarHTML = '';
       if (sender === 'bot') {
         if (avatar) {
           avatarHTML = `<img class="avatar" src="${avatar}" alt="Bot Avatar">`;
         } else {
-          avatarHTML = `<div class="avatar">B</div>`;
+          // يمكنك استخدام حرف أو أيقونة افتراضية
+          avatarHTML = `<div class="avatar">🤖</div>`; // تغيير إلى رمز تعبيري أو SVG
         }
       }
 
       const now = new Date();
       const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
+      // بناء HTML الداخلي للمكون
+      // ملاحظة: تم نقل الصورة الرمزية خارج الهيدر ليتم عرضها بجانب المحتوى للـ bot
       messageElement.innerHTML = `
-      <div class="message-header">
-        ${sender === 'bot' ? avatarHTML : ''}
+      ${sender === 'bot' ? avatarHTML : ''}
+      <div class="message-body"> <div class="message-content">${processedContent}</div>
+          <div class="message-time">${timeStr}</div>
       </div>
-      <div class="message-content">${processedContent}</div>
-      <div class="message-time">${timeStr}</div>
     `;
+
+       // تعديل طفيف في بناء الـ HTML لترتيب أفضل (خاصة للـ bot)
+       if (sender === 'bot') {
+           messageElement.innerHTML = `
+             ${avatarHTML}
+             <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                 <div class="message-content">${processedContent}</div>
+                 <div class="message-time">${timeStr}</div>
+             </div>
+         `;
+       } else { // رسالة المستخدم
+           messageElement.innerHTML = `
+             <div class="message-content">${processedContent}</div>
+             <div class="message-time">${timeStr}</div>
+         `;
+       }
+
 
       // إضافة الأنماط والمحتوى للظل
       this.shadowRoot.appendChild(style);
       this.shadowRoot.appendChild(messageElement);
 
-      // تفعيل الروابط وأزرار الإجراءات
+      // تفعيل الروابط وأزرار الإجراءات بعد إضافة المحتوى
       this._activateLinks();
     }
 
     /**
-     * معالجة محتوى الرسالة لإضافة الروابط والتنسيق
+     * معالجة محتوى الرسالة لتحويل الروابط والماركداون البسيط
      */
     _processMessageContent(content) {
-      // تحويل الروابط العادية إلى روابط قابلة للنقر
-      let processed = content.replace(
-        /(https?:\/\/[^\s]+)/g,
-        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+      // الحماية من حقن HTML بسيط (هذه ليست حماية كاملة!)
+      let processed = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+      // تحويل أكواد الماركداون متعددة الأسطر ```code```
+      processed = processed.replace(
+          /```([\s\S]*?)```/g, // استخدام [\s\S] لمطابقة أي حرف بما في ذلك الأسطر الجديدة
+          (match, code) => `<pre><code>${code.trim()}</code></pre>` // استخدام الدالة لإزالة المسافات الزائدة
       );
 
-      // تحويل أكواد الماركداون البسيطة (مثل ``code``)
-      processed = processed.replace(
-        /`([^`]+)`/g,
-        '<code>$1</code>'
-      );
+      // تحويل أكواد الماركداون المضمنة `code` (بعد معالجة الكتل لتجنب التداخل)
+       processed = processed.replace(
+           /`([^`]+)`/g,
+           '<code>$1</code>'
+       );
 
-      // معالجة أكواد الماركداون متعددة الأسطر
-      processed = processed.replace(
-        /```([^`]+)```/g,
-        '<pre><code>$1</code></pre>'
-      );
+      // تحويل الروابط العادية إلى روابط قابلة للنقر (يجب أن يتم بعد معالجة الكود لتجنب تحويل الروابط داخل الكود)
+      // تأكد من أن هذا لا يطبق داخل <pre> أو <code>
+       processed = processed.replace(
+           /(?<!<code[^>]*?>)(?<!<pre[^>]*?>)(https?:\/\/[^\s<]+)/g, // استخدام Negative Lookbehind للتأكد أنه ليس داخل code أو pre
+           '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+       );
+
 
       // تحويل زر الإجراء (مثال: [زر الإجراء](action:do_something))
       processed = processed.replace(
         /\[([^\]]+)\]\(action:([^)]+)\)/g,
         '<button class="action-button" data-action="$2">$1</button>'
       );
+
+       // تحويل نهايات الأسطر إلى <br> (اختياري، حسب الرغبة في عرض النص)
+       // قد ترغب في تطبيقه فقط خارج <pre>
+       // processed = processed.replace(/\n/g, '<br>');
+
 
       return processed;
     }
@@ -316,24 +411,31 @@
      * تفعيل الروابط وأزرار الإجراءات في الرسالة
      */
     _activateLinks() {
-      // الحصول على جميع أزرار الإجراءات
       const actionButtons = this.shadowRoot.querySelectorAll('.action-button');
       actionButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          const action = button.getAttribute('data-action');
-          // إرسال حدث للأعلى عند النقر على زر الإجراء
-          this.dispatchEvent(new CustomEvent('action-clicked', {
-            detail: { action },
-            bubbles: true,
-            composed: true
-          }));
-        });
+        // التأكد من عدم إضافة المستمع أكثر من مرة (احتياطي)
+        if (!button.hasAttribute('data-listener-added')) {
+            button.addEventListener('click', () => {
+              const action = button.getAttribute('data-action');
+              this.dispatchEvent(new CustomEvent('action-clicked', {
+                detail: { action },
+                bubbles: true, // السماح للحدث بالصعود في شجرة DOM
+                composed: true // السماح للحدث بالخروج من Shadow DOM
+              }));
+            });
+            button.setAttribute('data-listener-added', 'true');
+        }
       });
+
+      // ملاحظة: الروابط العادية <a> تعمل تلقائياً، لا حاجة لتفعيلها هنا.
     }
   }
 
-  // تسجيل المكون
-  customElements.define('chat-message', ChatMessage);
+  // تسجيل المكون المخصص
+  // تأكد من أن هذا الاسم لم يتم استخدامه من قبل
+  if (!customElements.get('chat-message')) {
+    customElements.define('chat-message', ChatMessage);
+  }
 
   // src/components/suggestions.js
 
@@ -684,701 +786,859 @@
   // تسجيل المكون
   customElements.define('chat-avatar', ChatAvatar);
 
-  /**
-   * خدمة الاتصال بالخادم للدردشة باستخدام SSE
-   */
-  class ChatService {
-    /**
-     * إرسال رسالة إلى الخادم والحصول على دفق SSE للردود
-     * @param {string} url - عنوان URL للخادم
-     * @param {Object} data - بيانات الرسالة للإرسال
-     * @returns {EventSource} - موجّه أحداث SSE
-     */
-    sendMessage(url, data) {
-      return new Promise((resolve, reject) => {
-        // التحقق من دعم المتصفح لـ EventSource
-        if (!window.EventSource) {
-          reject(new Error('المتصفح الحالي لا يدعم EventSource. يرجى تحديث المتصفح.'));
-          return;
-        }
+  // إزالة استيراد ChatService:
+  // import { ChatService } from './services/chat-service.js';
 
-        // إنشاء عنوان URL للاتصال مع تضمين المعاملات
-        const queryParams = new URLSearchParams();
-        for (const key in data) {
-          queryParams.append(key, data[key]);
-        }
-
-        const fullUrl = `${url}?${queryParams.toString()}`;
-
-        try {
-          // إنشاء اتصال SSE
-          const eventSource = new EventSource(fullUrl);
-
-          // التحقق من نجاح الاتصال
-          eventSource.onopen = () => {
-            resolve(eventSource);
-          };
-
-          // معالجة أخطاء الاتصال
-          eventSource.onerror = (error) => {
-            eventSource.close();
-            reject(error);
-          };
-        } catch (error) {
-          reject(error);
-        }
-      });
-    }
-
-    /**
-     * إرسال رسالة باستخدام طريقة POST (كبديل لـ SSE)
-     * عندما لا يتوفر دعم SSE أو عند الحاجة لارسال بيانات POST
-     * @param {string} url
-     * @param {Object} data
-     */
-    async postMessage(url, data) {
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data)
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-
-        return this._processStream(reader, decoder);
-      } catch (error) {
-        console.error('Error in postMessage:', error);
-        throw error;
-      }
-    }
-
-    /**
-     * معالجة الدفق
-     * @param {ReadableStreamDefaultReader} reader
-     * @param {TextDecoder} decoder
-     */
-    async _processStream(reader, decoder) {
-      let buffer = '';
-
-      const processEvents = async () => {
-        const { value, done } = await reader.read();
-        if (done) return null;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        // معالجة الأحداث
-        const events = buffer.split('\n\n');
-        buffer = events.pop() || '';
-
-        return events.map(event => {
-          const lines = event.split('\n');
-          const parsedEvent = {};
-
-          lines.forEach(line => {
-            if (line.startsWith('event: ')) {
-              parsedEvent.type = line.slice(7).trim();
-            } else if (line.startsWith('data: ')) {
-              try {
-                parsedEvent.data = JSON.parse(line.slice(6).trim());
-              } catch (e) {
-                parsedEvent.data = line.slice(6).trim();
-              }
-            }
-          });
-
-          return parsedEvent;
-        });
-      };
-
-      return {
-        async next() {
-          return await processEvents();
-        },
-        close() {
-          reader.cancel();
-        }
-      };
-    }
-  }
-
-  // استيراد الأنماط
+  // استيراد الأنماط (تبقى كما هي)
   const styles = `
-  :host {
-    --primary-color: #007BFF;
-    --primary-hover: #0069d9;
-    --bg-color: #fff;
-    --header-bg: #E6F0FA;
-    --text-color: #333;
-    --text-secondary: #666;
-    --message-bg-user: var(--primary-color);
-    --message-color-user: #fff;
-    --message-bg-bot: #F8F9FA;
-    --message-color-bot: #666;
-    --border-color: #E6E6E6;
-    --footer-bg: rgba(249, 250, 251, 0.8);
-    --bubble-size: 56px;
-    --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+ :host {
+   --primary-color: #007BFF;
+   --primary-hover: #0069d9;
+   --bg-color: #fff;
+   --header-bg: #E6F0FA;
+   --text-color: #333;
+   --text-secondary: #666;
+   --message-bg-user: var(--primary-color);
+   --message-color-user: #fff;
+   --message-bg-bot: #F8F9FA;
+   --message-color-bot: #666;
+   --border-color: #E6E6E6;
+   --footer-bg: rgba(249, 250, 251, 0.8);
+   --bubble-size: 56px;
+   --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    position: fixed;
-    z-index: 9999;
-    box-sizing: border-box;
-  }
+   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+   position: fixed;
+   z-index: 9999;
+   box-sizing: border-box;
+ }
 
-  :host([theme="dark"]) {
-    --primary-color: #375FFF;
-    --primary-hover: #2D4ECC;
-    --bg-color: #1E1E1E;
-    --header-bg: #2D2D2D;
-    --text-color: #fff;
-    --text-secondary: #B0B0B0;
-    --message-bg-user: var(--primary-color);
-    --message-color-user: #fff;
-    --message-bg-bot: #2D2D2D;
-    --message-color-bot: #E0E0E0;
-    --border-color: #3D3D3D;
-    --footer-bg: rgba(30, 30, 30, 0.85);
-  }
+ :host([theme="dark"]) {
+   --primary-color: #375FFF;
+   --primary-hover: #2D4ECC;
+   --bg-color: #1E1E1E;
+   --header-bg: #2D2D2D;
+   --text-color: #fff;
+   --text-secondary: #B0B0B0;
+   --message-bg-user: var(--primary-color);
+   --message-color-user: #fff;
+   --message-bg-bot: #2D2D2D;
+   --message-color-bot: #E0E0E0;
+   --border-color: #3D3D3D;
+   --footer-bg: rgba(30, 30, 30, 0.85);
+ }
 
-  :host([position="bottom-right"]) .chat-container {
-    bottom: 24px;
-    right: 24px;
-  }
+ :host([position="bottom-right"]) .chat-container {
+   bottom: 24px;
+   right: 24px;
+ }
 
-  :host([position="bottom-left"]) .chat-container {
-    bottom: 24px;
-    left: 24px;
-  }
+ :host([position="bottom-left"]) .chat-container {
+   bottom: 24px;
+   left: 24px;
+ }
 
-  :host([direction="rtl"]) {
-    direction: rtl;
-    text-align: right;
-  }
-
-  .chat-container {
-    position: fixed;
-    display: flex;
-    flex-direction: column;
-    width: 350px;
-    height: calc(95vh - 32px);
-    max-height: 600px;
-    background-color: transparent;
-    border-radius: 24px;
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    transition: transform 0.3s ease, opacity 0.3s ease;
-    transform: translateY(20px);
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .chat-container.open {
-    transform: translateY(0);
-    opacity: 1;
-    pointer-events: all;
-  }
-
-  .chat-header {
-    display: flex;
-    align-items: center;
-    padding: 16px;
-    background-color: var(--header-bg);
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .header-info {
-    margin-left: 12px;
+ :host([direction="rtl"]) {
+   direction: rtl;
+   text-align: right;
+ }
+ :host([direction="rtl"]) .header-info {
+    margin-left: auto; /* لنقل المعلومات إلى اليمين في وضع RTL */
     margin-right: 12px;
-  }
+ }
+ :host([direction="rtl"]) .send-button svg {
+    transform: scaleX(-1); /* لعكس أيقونة الإرسال */
+ }
+ :host([direction="rtl"]) .footer-actions {
+    flex-direction: row-reverse; /* لعكس ترتيب الأزرار في الأسفل */
+ }
 
-  .header-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-color);
-    margin: 0;
-  }
+ .chat-container {
+   z-index: 9999;
+   position: fixed;
+   display: flex;
+   flex-direction: column;
+   width: 350px;
+   height: calc(95vh - 32px);
+   max-height: 600px;
+   background-color: transparent; /* تم تغييرها لتكون شفافة */
+   border-radius: 24px; /* زيادة الانحناء */
+   overflow: hidden;
+   box-shadow: var(--shadow);
+   transition: transform 0.3s ease, opacity 0.3s ease;
+   transform: translateY(20px);
+   opacity: 0;
+   pointer-events: none;
+ }
 
-  .header-subtitle {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin: 0;
-  }
+ .chat-container.open {
+   transform: translateY(0);
+   opacity: 1;
+   pointer-events: all;
+ }
 
-  .messages-container {
-    flex: 1;
-    padding: 16px;
-    overflow-y: auto;
-    background-color: var(--bg-color);
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+ .chat-header {
+   display: flex;
+   align-items: center;
+   padding: 16px;
+   background-color: var(--header-bg);
+   border-top-left-radius: 16px; /* تعديل للانحناء الجديد */
+   border-top-right-radius: 16px; /* تعديل للانحناء الجديد */
+   border-bottom: 1px solid var(--border-color);
+ }
 
-  .messages-container::-webkit-scrollbar {
-    width: 6px;
-  }
+ .header-info {
+   margin-left: 12px; /* تعديل المسافة */
+   margin-right: 12px; /* تعديل المسافة */
+   flex-grow: 1; /* للسماح بالنمو وأخذ المساحة المتاحة */
+ }
 
-  .messages-container::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
-  }
+ .header-title {
+   font-size: 16px;
+   font-weight: 600;
+   color: var(--text-color);
+   margin: 0;
+ }
 
-  .messages-container::-webkit-scrollbar-track {
-    background-color: transparent;
-  }
+ .header-subtitle {
+   font-size: 12px;
+   color: var(--text-secondary);
+   margin: 0;
+ }
 
-  .chat-footer {
-    padding: 16px;
-    background-color: var(--footer-bg);
-    border-top: 1px solid var(--border-color);
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
-    backdrop-filter: blur(10px);
-  }
+ .messages-container {
+   flex: 1;
+   padding: 16px;
+   overflow-y: auto;
+   background-color: var(--bg-color);
+   display: flex;
+   flex-direction: column;
+   gap: 16px; /* زيادة المسافة بين الرسائل */
+ }
 
-  .input-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
+ /* تخصيص شريط التمرير */
+ .messages-container::-webkit-scrollbar {
+   width: 6px;
+ }
+ .messages-container::-webkit-scrollbar-thumb {
+   background-color: rgba(0, 0, 0, 0.2);
+   border-radius: 3px;
+ }
+ .messages-container::-webkit-scrollbar-track {
+   background-color: transparent;
+ }
 
-  .chat-input {
-    flex: 1;
-    padding: 10px 16px;
-    font-size: 14px;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    border-radius: 9999px;
-    outline: none;
-  }
+ .chat-footer {
+   padding: 16px;
+   background-color: var(--footer-bg);
+   border-top: 1px solid var(--border-color);
+   border-bottom-left-radius: 16px; /* تعديل للانحناء الجديد */
+   border-bottom-right-radius: 16px; /* تعديل للانحناء الجديد */
+   backdrop-filter: blur(10px); /* إضافة تأثير الضبابية */
+ }
 
-  .chat-input::placeholder {
-    color: var(--text-secondary);
-  }
+ .input-group {
+   display: flex;
+   align-items: center;
+   gap: 8px; /* إضافة مسافة بين الحقل والزر */
+   margin-bottom: 8px; /* مسافة سفلية قبل الأزرار الإضافية */
+ }
 
-  .send-button {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
+ .chat-input {
+   flex: 1;
+   padding: 10px 16px; /* زيادة الحشو الداخلي */
+   font-size: 14px;
+   background-color: var(--bg-color);
+   color: var(--text-color);
+   border: 1px solid var(--border-color);
+   border-radius: 9999px; /* جعله دائريًا تمامًا */
+   outline: none;
+ }
 
-  .send-button:hover {
-    background-color: var(--primary-hover);
-  }
+ .chat-input::placeholder {
+   color: var(--text-secondary);
+ }
 
-  .send-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+ .send-button {
+   width: 40px; /* حجم الزر */
+   height: 40px; /* حجم الزر */
+   border-radius: 50%; /* دائري */
+   background-color: var(--primary-color);
+   color: white;
+   border: none;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   cursor: pointer;
+   transition: background-color 0.2s;
+   flex-shrink: 0; /* منع الزر من الانكماش */
+ }
 
-  .send-button svg {
-    width: 18px;
-    height: 18px;
-  }
+ .send-button:hover {
+   background-color: var(--primary-hover);
+ }
 
-  .footer-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
+ .send-button:disabled {
+   opacity: 0.5;
+   cursor: not-allowed;
+ }
 
-  .footer-button {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 12px;
-    cursor: pointer;
-    padding: 4px 8px;
-  }
+ .send-button svg {
+   width: 18px; /* حجم الأيقونة */
+   height: 18px; /* حجم الأيقونة */
+ }
 
-  .footer-button:hover {
-    color: var(--primary-color);
-  }
+ .footer-actions {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   /* تم حذف margin-top */
+ }
 
-  .powered-by {
-    font-size: 12px;
-    color: var(--text-secondary);
-  }
+ .footer-button {
+   background: none;
+   border: none;
+   color: var(--text-secondary);
+   font-size: 12px;
+   cursor: pointer;
+   padding: 4px 8px;
+ }
+
+ .footer-button:hover {
+   color: var(--primary-color);
+ }
+
+ .powered-by {
+   font-size: 12px;
+   color: var(--text-secondary);
+ }
+
+ /* إضافة عنصر لعرض زمن الاستجابة ومعرف الجلسة (اختياري) */
+ .session-info {
+   font-size: 10px;
+   color: var(--text-secondary);
+   text-align: center; /* توسيط النص */
+   margin-top: 5px;
+   display: none; /* إخفاءه مبدئياً */
+ }
+ :host([debug="true"]) .session-info {
+    display: block; /* إظهاره في وضع التصحيح */
+ }
 `;
 
   class ChatWidget extends HTMLElement {
-    constructor() {
-      super();
-      this.attachShadow({ mode: 'open' });
-      this.isOpen = false;
-      this.messages = [];
-      this.isTyping = false;
-      this.sessionId = this._generateSessionId();
+   constructor() {
+     super();
+     this.attachShadow({ mode: 'open' });
+     this.isOpen = false;
+     this.messages = [];
+     this.isTyping = false; // لا يزال مفيدًا لمؤشر الكتابة العام
+     this.sessionId = this._loadSessionId(); // تحميل أو إنشاء معرف الجلسة
 
-      // استدعاء التهيئة
-      this._initialize();
-    }
+     // متغيرات الحالة الجديدة لـ SSE
+     this.currentBotMessageContainer = null;
+     this.responseStartTime = null;
 
-    static get observedAttributes() {
-      return [
-        'project-id', 'theme', 'position', 'welcome-message',
-        'api-url', 'direction', 'avatar', 'title', 'subtitle', 'powered-by'
-      ];
-    }
+     // إزالة التهيئة الخاصة بـ ChatService
+     // this.chatService = new ChatService(); // --- محذوف ---
 
-    _initialize() {
-      // إنشاء خدمة الدردشة
-      this.chatService = new ChatService();
+     this._initialize();
+   }
 
-      // التهيئة الأساسية للمكون
-      this._render();
-      this._setupEventListeners();
+   static get observedAttributes() {
+     return [
+       'project-id', 'theme', 'position', 'welcome-message',
+       'api-url', 'direction', 'avatar', 'title', 'subtitle', 'powered-by', 'debug' // إضافة debug
+     ];
+   }
 
-      // إضافة رسالة الترحيب
-      setTimeout(() => {
-        this._addMessage({
-          content: this.getAttribute('welcome-message') || 'مرحبًا بك! كيف يمكنني مساعدتك اليوم؟',
-          sender: 'bot'
-        });
-      }, 300);
-    }
+   _initialize() {
+     // التهيئة الأساسية للمكون
+     this._render();
+     this._setupEventListeners();
 
-    _render() {
-      const styleEl = document.createElement('style');
-      styleEl.textContent = styles;
+     // إضافة رسالة الترحيب
+     setTimeout(() => {
+       // لا نستخدم _addMessage هنا مباشرة للترحيب إذا أردنا تصميمًا مختلفًا له
+       const welcomeMsg = this.getAttribute('welcome-message') || 'مرحبًا بك! كيف يمكنني مساعدتك اليوم؟';
+       this._createBotMessageContainer(welcomeMsg); // إنشاء حاوية رسالة البوت مباشرة
+       // لا نحتاج إلى إضافة رسالة الترحيب إلى مصفوفة messages إذا كانت ثابتة
+     }, 300);
+   }
 
-      const template = document.createElement('template');
-      template.innerHTML = `
-      <div class="chat-container">
-        <div class="chat-header">
-          <chat-avatar
-            src="${this.getAttribute('avatar') || ''}"
-            fallback="${(this.getAttribute('title') || 'Bot').charAt(0)}"
-            bg-color="var(--primary-color)">
-          </chat-avatar>
-          <div class="header-info">
-            <h3 class="header-title">${this.getAttribute('title') || 'Chat Assistant'}</h3>
-            <p class="header-subtitle">${this.getAttribute('subtitle') || 'Our virtual agent is here to help you'}</p>
-          </div>
-        </div>
+   _render() {
+     const styleEl = document.createElement('style');
+     styleEl.textContent = styles;
 
-        <div class="messages-container" id="messages"></div>
+     const template = document.createElement('template');
+     template.innerHTML = `
+     <div class="chat-container">
+       <div class="chat-header">
+         <chat-avatar
+           src="${this.getAttribute('avatar') || ''}"
+           fallback="${(this.getAttribute('title') || 'Bot').charAt(0)}"
+           bg-color="var(--primary-color)">
+         </chat-avatar>
+         <div class="header-info">
+           <h3 class="header-title">${this.getAttribute('title') || 'Chat Assistant'}</h3>
+           <p class="header-subtitle">${this.getAttribute('subtitle') || 'Our virtual agent is here to help you'}</p>
+         </div>
+       </div>
 
-        <div class="chat-footer">
-          <div class="input-group">
-            <input type="text" class="chat-input" placeholder="اكتب رسالة..." />
-            <button class="send-button" disabled>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
-          </div>
-          <div class="footer-actions">
-            <button class="footer-button new-chat-btn">محادثة جديدة</button>
-            <span class="powered-by">${this.getAttribute('powered-by') || 'Powered by AI'}</span>
-            <button class="footer-button close-btn">إغلاق</button>
-          </div>
-        </div>
-      </div>
+       <div class="messages-container" id="messages"></div>
 
-      <chat-button></chat-button>
-    `;
+       <div class="chat-footer">
+         <div class="input-group">
+           <input type="text" class="chat-input" placeholder="اكتب رسالة..." />
+           <button class="send-button" disabled>
+             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <line x1="22" y1="2" x2="11" y2="13"></line>
+               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+             </svg>
+           </button>
+         </div>
+         <div class="footer-actions">
+           <button class="footer-button new-chat-btn">محادثة جديدة</button>
+           <span class="powered-by">${this.getAttribute('powered-by') || 'Powered by AI'}</span>
+           <button class="footer-button close-btn">إغلاق</button>
+         </div>
+          <div class="session-info">
+           <span id="session-id-display">معرف الجلسة: ${this.sessionId}</span>
+           <span id="last-response-time"></span>
+         </div>
+       </div>
+     </div>
 
-      this.shadowRoot.appendChild(styleEl);
-      this.shadowRoot.appendChild(template.content.cloneNode(true));
+     <chat-button></chat-button>
+   `;
 
-      // تخزين المراجع للعناصر المهمة
-      this.chatContainer = this.shadowRoot.querySelector('.chat-container');
-      this.messagesContainer = this.shadowRoot.querySelector('#messages');
-      this.chatInput = this.shadowRoot.querySelector('.chat-input');
-      this.sendButton = this.shadowRoot.querySelector('.send-button');
-      this.chatButton = this.shadowRoot.querySelector('chat-button');
+     this.shadowRoot.appendChild(styleEl);
+     this.shadowRoot.appendChild(template.content.cloneNode(true));
 
-      // إضافة اقتراحات مبدئية
+     // تخزين المراجع للعناصر المهمة
+     this.chatContainer = this.shadowRoot.querySelector('.chat-container');
+     this.messagesContainer = this.shadowRoot.querySelector('#messages');
+     this.chatInput = this.shadowRoot.querySelector('.chat-input');
+     this.sendButton = this.shadowRoot.querySelector('.send-button');
+     this.chatButton = this.shadowRoot.querySelector('chat-button');
+
+     // إضافة اقتراحات مبدئية (إذا لم تكن هناك رسائل ترحيب أولاً)
+     if (this.messagesContainer.children.length === 0) {
+          this._addInitialSuggestions();
+     }
+   }
+
+   _addInitialSuggestions() {
       const suggestionsEl = document.createElement('chat-suggestions');
+      // يمكن جعل الاقتراحات قابلة للتخصيص عبر سمة
       suggestionsEl.suggestions = [
         'ما هي خدماتكم؟',
         'كيف يمكنني التواصل معكم؟',
         'هل لديكم خدمة توصيل؟'
       ];
       this.messagesContainer.appendChild(suggestionsEl);
-    }
-
-    _setupEventListeners() {
-      // زر فتح الدردشة
-      this.chatButton.addEventListener('click', () => {
-        this.toggleChat();
-      });
-
-      // زر إرسال الرسالة
-      this.sendButton.addEventListener('click', () => {
-        this._sendMessage();
-      });
-
-      // الإرسال عند الضغط على Enter
-      this.chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          this._sendMessage();
-        }
-      });
-
-      // تفعيل/تعطيل زر الإرسال حسب محتوى الإدخال
-      this.chatInput.addEventListener('input', () => {
-        this.sendButton.disabled = !this.chatInput.value.trim();
-      });
-
-      // زر المحادثة الجديدة
-      this.shadowRoot.querySelector('.new-chat-btn').addEventListener('click', () => {
-        this._clearChat();
-      });
-
-      // زر الإغلاق
-      this.shadowRoot.querySelector('.close-btn').addEventListener('click', () => {
-        this.toggleChat();
-      });
-
-      // الاستماع لأحداث اقتراحات الدردشة
-      this.shadowRoot.addEventListener('suggestion-clicked', (e) => {
-        const { suggestion } = e.detail;
-        this.chatInput.value = suggestion;
-        this._sendMessage();
-      });
-    }
-
-    _addMessage(message) {
-      const id = Date.now().toString();
-      const timestamp = new Date();
-      const fullMessage = {
-        id,
-        content: message.content,
-        sender: message.sender,
-        timestamp
-      };
-
-      // إضافة الرسالة إلى المصفوفة
-      this.messages.push(fullMessage);
-
-      // إنشاء مكون رسالة جديد
-      const messageEl = document.createElement('chat-message');
-      messageEl.setAttribute('sender', message.sender);
-      messageEl.setAttribute('message-id', id);
-      if (message.sender === 'bot') {
-        messageEl.setAttribute('avatar', this.getAttribute('avatar') || '');
-      }
-      messageEl.textContent = message.content;
-
-      // إضافة المكون للعرض
-      this.messagesContainer.appendChild(messageEl);
-
-      // التمرير إلى أسفل
       this._scrollToBottom();
+   }
 
-      // إخفاء الاقتراحات عند إرسال أول رسالة
-      if (this.messages.length === 2 && this.messages[1].sender === 'user') {
-        const suggestions = this.shadowRoot.querySelector('chat-suggestions');
-        if (suggestions) {
-          suggestions.style.display = 'none';
-        }
+   _setupEventListeners() {
+     this.chatButton.addEventListener('click', () => this.toggleChat());
+     this.sendButton.addEventListener('click', () => this._sendMessage());
+     this.chatInput.addEventListener('keypress', (e) => {
+       if (e.key === 'Enter' && !this.sendButton.disabled) {
+         this._sendMessage();
+       }
+     });
+     this.chatInput.addEventListener('input', () => {
+       this.sendButton.disabled = !this.chatInput.value.trim();
+     });
+     this.shadowRoot.querySelector('.new-chat-btn').addEventListener('click', () => this._clearChat());
+     this.shadowRoot.querySelector('.close-btn').addEventListener('click', () => this.toggleChat());
+     this.shadowRoot.addEventListener('suggestion-clicked', (e) => {
+       const { suggestion } = e.detail;
+       this.chatInput.value = suggestion;
+       this.sendButton.disabled = false; // تفعيل الزر
+       this._sendMessage();
+     });
+   }
+
+   // --- دالة إضافة رسالة المستخدم (تبقى كما هي تقريباً) ---
+   _addUserMessage(content) {
+     const messageEl = document.createElement('chat-message');
+     messageEl.setAttribute('sender', 'user');
+     messageEl.setAttribute('message-id', `user-${Date.now()}`);
+     messageEl.textContent = content; // تعيين المحتوى مباشرة
+
+     // إضافة الوقت للرسالة
+     const timeEl = document.createElement('span');
+     timeEl.className = 'timestamp';
+     timeEl.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+     messageEl.shadowRoot.querySelector('.message-content').appendChild(timeEl);
+
+
+     this.messagesContainer.appendChild(messageEl);
+     this._scrollToBottom();
+
+     // إخفاء الاقتراحات إذا كانت موجودة
+     const suggestions = this.shadowRoot.querySelector('chat-suggestions');
+     if (suggestions) {
+       suggestions.style.display = 'none';
+     }
+   }
+
+   // --- دالة إنشاء حاوية رسالة البوت (معدلة / جديدة) ---
+   _createBotMessageContainer(initialContent = '...') {
+       const messageEl = document.createElement('chat-message');
+       messageEl.setAttribute('sender', 'bot');
+       messageEl.setAttribute('message-id', `bot-${Date.now()}`);
+       messageEl.setAttribute('avatar', this.getAttribute('avatar') || '');
+       messageEl.textContent = initialContent; // تعيين المحتوى المبدئي (أو placeholder)
+
+       this.messagesContainer.appendChild(messageEl);
+       this._scrollToBottom();
+       return messageEl; // إرجاع العنصر للتعامل معه لاحقاً
+   }
+
+   // --- الدالة الرئيسية لإرسال الرسالة (معدلة بشكل كبير) ---
+   _sendMessage() {
+     const message = this.chatInput.value.trim();
+     if (!message) return;
+
+     // 1. إضافة رسالة المستخدم إلى الواجهة
+     this._addUserMessage(message);
+
+     // 2. مسح حقل الإدخال وتعطيل الزر
+     this.chatInput.value = '';
+     this.sendButton.disabled = true;
+     this.chatInput.disabled = true; // تعطيل الإدخال أثناء انتظار الرد
+
+     // 3. إظهار مؤشر الكتابة العام (اختياري إذا كان التصميم يتطلب ذلك)
+     // this._showTypingIndicator(); // --- يمكن إزالته إذا لم يكن مرغوبًا مع الـ streaming ---
+
+     // 4. إعداد حاوية رسالة البوت الجديدة للرد القادم
+     this.currentBotMessageContainer = this._createBotMessageContainer(); // استخدام placeholder الافتراضي '...'
+     this.responseStartTime = performance.now(); // بدء قياس الوقت
+
+     // 5. استدعاء دالة الـ Streaming مباشرة
+     this._streamChatResponse(message, this.sessionId)
+       .catch(err => {
+          console.error('Streaming Error:', err);
+          // التعامل مع الخطأ على مستوى أعلى (مثل فشل الاتصال الأولي)
+          this._handleStreamError(err.message || 'فشل الاتصال بالخادم.');
+       });
+   }
+
+   // --- دالة جديدة: التعامل مع تدفق استجابة الدردشة (SSE) ---
+   async _streamChatResponse(message, sessionId) {
+     const url = this.getAttribute('api-url');
+     if (!url) {
+       throw new Error("Chat API URL is not set.");
+     }
+     // تضمين project_id إذا كان الـ API يتطلبه
+     const projectId = this.getAttribute('project-id');
+     const requestData = {
+         message,
+         session_id: sessionId,
+         debug: this.hasAttribute('debug') // إرسال حالة التصحيح
+     };
+     // إضافة projectId إذا كان موجودًا
+     if (projectId) {
+       requestData.project_id = projectId;
+     }
+
+
+     const response = await fetch(url, {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json',
+         'Accept': 'text/event-stream' // مهم لـ SSE
+       },
+       body: JSON.stringify(requestData),
+     });
+
+     if (!response.ok) {
+       // محاولة قراءة رسالة الخطأ من الخادم
+       let errorText = `HTTP error ${response.status}`;
+       try {
+         const errorData = await response.json(); // محاولة قراءة JSON
+         errorText = errorData.detail || errorData.message || JSON.stringify(errorData);
+       } catch (e) {
+         errorText = await response.text(); // قراءة كنص إذا فشل JSON
+       }
+       throw new Error(errorText);
+     }
+     if (!response.body) {
+       throw new Error('No response body received from server.');
+     }
+
+     const reader = response.body.getReader();
+     const decoder = new TextDecoder('utf-8');
+     let buffer = '';
+
+     // حلقة لقراءة الـ stream
+     while (true) {
+       const { done, value } = await reader.read();
+       if (done) {
+         console.log("Stream finished.");
+         // قد تحتاج إلى التحقق هنا إذا لم يتم استلام حدث 'end'
+         if (!this.currentBotMessageContainer.classList.contains('finished')) {
+              console.warn("Stream ended without an 'end' event. Finalizing message.");
+              // التأكد من إخفاء المؤشر وإعادة تفعيل الإدخال حتى لو لم يصل حدث end
+              this._finishBotMessage(this.sessionId); // استخدام sessionId الحالي
+         }
+         break;
+       }
+
+       buffer += decoder.decode(value, { stream: true });
+       // تقسيم الأحداث بناءً على السطرين الفارغين
+       const parts = buffer.split('\n\n');
+       buffer = parts.pop() || ''; // الجزء الأخير قد يكون غير مكتمل، يتم الاحتفاظ به
+
+       for (const chunk of parts) {
+         this._processSseEvent(chunk);
+       }
+     }
+   }
+
+   // --- دالة جديدة: معالجة حدث SSE واحد ---
+   _processSseEvent(eventData) {
+     console.log("Raw SSE Event:", eventData);
+     const lines = eventData.split('\n');
+     let eventType = 'message'; // النوع الافتراضي
+     let payload = '';
+
+     for (const line of lines) {
+       if (line.startsWith('event:')) {
+         eventType = line.slice(6).trim();
+       } else if (line.startsWith('data:')) {
+         // التعامل مع البيانات التي قد تمتد على عدة أسطر data:
+         payload += line.slice(5).trim();
+       }
+       // يمكن تجاهل الأسطر الأخرى مثل id:, retry: حاليًا
+     }
+
+     if (!payload) return; // لا يوجد بيانات لمعالجتها
+
+     let data;
+     try {
+       data = JSON.parse(payload);
+       console.log(`Parsed SSE Event (${eventType}):`, data);
+     } catch (err) {
+       console.error('JSON parse error in SSE data:', err, payload);
+       this._handleStreamError(`خطأ في تنسيق بيانات الخادم: ${payload}`);
+       return;
+     }
+
+     switch (eventType) {
+       case 'chunk':
+         if (data.content !== undefined && data.content !== null) {
+           this._appendToBotMessage(data.content);
+         }
+         break;
+       case 'end':
+         // الخادم يشير إلى نهاية الاستجابة
+         this._finishBotMessage(data.session_id); // تمرير معرف الجلسة الجديد إن وجد
+         break;
+       case 'error':
+         // الخادم أرسل رسالة خطأ واضحة
+         this._handleStreamError(data.error || data.message || 'حدث خطأ غير معروف من الخادم.');
+         break;
+       case 'debug':
+          console.log("Debug Info:", data);
+          // يمكنك عرض معلومات التصحيح في الواجهة إذا أردت
+          break;
+       // يمكنك إضافة حالات أخرى مثل 'tool_call', 'tool_result' إذا كانت API تدعمها
+       default:
+         console.warn(`Unhandled SSE event type: ${eventType}`);
+         // قد ترغب في التعامل مع النوع الافتراضي 'message' إذا كان الخادم لا يرسل 'event:'
+         if(eventType === 'message' && data.content) {
+             this._appendToBotMessage(data.content);
+         }
+     }
+   }
+
+   // --- دالة مساعدة جديدة: إضافة نص إلى رسالة البوت الحالية ---
+   _appendToBotMessage(text) {
+     if (!this.currentBotMessageContainer) {
+       console.error("Attempted to append text but no currentBotMessageContainer exists.");
+       // ربما إنشاء حاوية جديدة كحل بديل؟
+       this.currentBotMessageContainer = this._createBotMessageContainer('');
+     }
+
+     const contentEl = this.currentBotMessageContainer.shadowRoot.querySelector('.message-content');
+     if (!contentEl) {
+         console.error("Could not find .message-content in currentBotMessageContainer.");
+         return;
+     }
+
+     // إزالة الـ placeholder ('...') عند وصول أول جزء
+     if (contentEl.textContent === '...') {
+       contentEl.textContent = '';
+     }
+
+     contentEl.textContent += text; // إضافة النص الجديد
+     this._scrollToBottom(); // التمرير لأسفل مع كل إضافة
+   }
+
+   // --- دالة مساعدة جديدة: إنهاء رسالة البوت ---
+   _finishBotMessage(newSessionId) {
+     if (!this.currentBotMessageContainer) {
+         console.warn("finishBotMessage called but no currentBotMessageContainer");
+         // تأكد من إعادة تفعيل الإدخال حتى لو لم تكن هناك رسالة
+         this.chatInput.disabled = false;
+         this.sendButton.disabled = !this.chatInput.value.trim(); // تفعيل زر الإرسال إذا كان هناك نص
+         return;
+     }
+
+     this.currentBotMessageContainer.classList.add('finished'); // علامة لتمييز الرسالة المكتملة
+
+     // إخفاء مؤشر الكتابة العام (إذا كان مستخدماً)
+     // this._hideTypingIndicator(); // --- إزالة إذا لم يعد المؤشر العام مستخدماً ---
+
+     const end = performance.now();
+     const duration = ((end - (this.responseStartTime || end)) / 1000).toFixed(2); // حساب المدة
+
+     // إضافة الطابع الزمني إلى الرسالة
+     const contentEl = this.currentBotMessageContainer.shadowRoot.querySelector('.message-content');
+     if (contentEl) {
+       const timeEl = document.createElement('span');
+       timeEl.className = 'timestamp';
+       timeEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+       contentEl.appendChild(timeEl); // إضافة الطابع الزمني داخل فقاعة الرسالة
+     }
+
+     // تحديث معلومات الجلسة وزمن الاستجابة (إذا كانت العناصر موجودة)
+     const responseTimeEl = this.shadowRoot.querySelector('#last-response-time');
+     if (responseTimeEl) {
+       responseTimeEl.textContent = ` | آخر زمن استجابة: ${duration} ث`;
+     }
+
+     // التحقق من تغيير معرف الجلسة وتحديثه
+     if (newSessionId && newSessionId !== this.sessionId) {
+       console.log(`Session ID changed from ${this.sessionId} to ${newSessionId}`);
+       this.sessionId = newSessionId;
+       localStorage.setItem('chatWidgetSessionId', newSessionId); // حفظ المعرف الجديد
+       const sessionIdDisplay = this.shadowRoot.querySelector('#session-id-display');
+       if (sessionIdDisplay) {
+         sessionIdDisplay.textContent = `معرف الجلسة: ${newSessionId}`;
+       }
+     }
+
+     // إعادة تفعيل حقل الإدخال وزر الإرسال
+     this.chatInput.disabled = false;
+     this.sendButton.disabled = !this.chatInput.value.trim(); // تفعيل/تعطيل بناءً على المحتوى الحالي
+
+     // إعادة تعيين حاوية الرسالة الحالية
+     this.currentBotMessageContainer = null;
+     this.responseStartTime = null;
+     this._scrollToBottom(); // تأكد من أن الرسالة المكتملة مرئية
+   }
+
+   // --- دالة مساعدة جديدة: التعامل مع أخطاء الـ Stream ---
+   _handleStreamError(errorMessage) {
+     console.error("Stream Error Handler:", errorMessage);
+
+     // إخفاء مؤشر الكتابة العام (إذا كان مستخدماً)
+     // this._hideTypingIndicator(); // --- إزالة إذا لم يعد المؤشر العام مستخدماً ---
+
+     const errorContent = `خطأ: ${errorMessage}`;
+
+     if (this.currentBotMessageContainer && !this.currentBotMessageContainer.classList.contains('finished')) {
+       // إذا كانت هناك رسالة بوت قيد الإنشاء، اعرض الخطأ فيها
+       const contentEl = this.currentBotMessageContainer.shadowRoot.querySelector('.message-content');
+       if (contentEl) {
+         contentEl.innerHTML = `<div class="error-message" style="color: red;">${errorContent}</div>`;
+          // إضافة الطابع الزمني للخطأ أيضاً
+          const timeEl = document.createElement('span');
+          timeEl.className = 'timestamp';
+          timeEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          contentEl.appendChild(timeEl);
+       }
+       this.currentBotMessageContainer.classList.add('finished', 'error'); // تمييزها كخطأ
+     } else {
+       // إذا لم تكن هناك رسالة قيد الإنشاء، أنشئ رسالة خطأ جديدة
+       const errorMsgContainer = this._createBotMessageContainer(''); // إنشاء حاوية جديدة
+       const contentEl = errorMsgContainer.shadowRoot.querySelector('.message-content');
+       contentEl.innerHTML = `<div class="error-message" style="color: red;">${errorContent}</div>`;
+        // إضافة الطابع الزمني للخطأ أيضاً
+       const timeEl = document.createElement('span');
+       timeEl.className = 'timestamp';
+       timeEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+       contentEl.appendChild(timeEl);
+       errorMsgContainer.classList.add('finished', 'error'); // تمييزها كخطأ
+     }
+
+     // إعادة تفعيل حقل الإدخال وزر الإرسال دائماً عند الخطأ
+     this.chatInput.disabled = false;
+     this.sendButton.disabled = !this.chatInput.value.trim();
+
+     // إعادة تعيين الحالة
+     this.currentBotMessageContainer = null;
+     this.responseStartTime = null;
+     this._scrollToBottom();
+   }
+
+
+   // --- دوال المؤشر العام (قد لا تكون ضرورية بنفس الشكل الآن) ---
+   _showTypingIndicator() {
+     // يمكن إبقاء هذه الدالة إذا أردت مؤشرًا عامًا منفصلاً يظهر أسفل المحادثة
+     if (this.shadowRoot.querySelector('#typing-indicator')) return; // لا تضف إذا كان موجودًا
+
+     this.isTyping = true;
+     const typingEl = document.createElement('typing-indicator');
+     typingEl.setAttribute('avatar', this.getAttribute('avatar') || '');
+     typingEl.id = 'typing-indicator';
+     this.messagesContainer.appendChild(typingEl);
+     this._scrollToBottom();
+   }
+
+   _hideTypingIndicator() {
+     this.isTyping = false;
+     const typingEl = this.shadowRoot.querySelector('#typing-indicator');
+     if (typingEl) {
+       typingEl.remove();
+     }
+   }
+
+   // --- دالة مسح المحادثة (تحديث بسيط لمعرف الجلسة) ---
+   _clearChat() {
+     this.messages = []; // مسح مصفوفة الرسائل (إذا كانت لا تزال مستخدمة)
+     while (this.messagesContainer.firstChild) {
+       this.messagesContainer.removeChild(this.messagesContainer.firstChild);
+     }
+
+     // إنشاء جلسة جديدة وتحديث العرض
+     this.sessionId = this._generateSessionId(); // إنشاء معرف جديد
+     localStorage.setItem('chatWidgetSessionId', this.sessionId); // حفظه
+     const sessionIdDisplay = this.shadowRoot.querySelector('#session-id-display');
+      if (sessionIdDisplay) {
+        sessionIdDisplay.textContent = `معرف الجلسة: ${this.sessionId}`;
+      }
+      const responseTimeEl = this.shadowRoot.querySelector('#last-response-time');
+      if (responseTimeEl) {
+        responseTimeEl.textContent = ''; // مسح زمن الاستجابة
       }
 
-      return fullMessage;
-    }
 
-    _sendMessage() {
-      const message = this.chatInput.value.trim();
-      if (!message) return;
+     // إعادة إضافة رسالة الترحيب و/أو الاقتراحات
+     setTimeout(() => {
+       const welcomeMsg = this.getAttribute('welcome-message') || 'مرحبًا بك مجددًا! كيف يمكنني المساعدة؟';
+       this._createBotMessageContainer(welcomeMsg);
+       this._addInitialSuggestions(); // إعادة إضافة الاقتراحات
+     }, 100); // تأخير بسيط للسماح بمسح الواجهة
 
-      // إضافة رسالة المستخدم
-      this._addMessage({
-        content: message,
-        sender: 'user'
-      });
+     // التأكد من تفعيل حقل الإدخال
+     this.chatInput.disabled = false;
+     this.sendButton.disabled = true; // تعطيل الإرسال لأن الحقل فارغ
+   }
 
-      // مسح حقل الإدخال
-      this.chatInput.value = '';
-      this.sendButton.disabled = true;
+   // --- تبديل حالة النافذة (تبقى كما هي) ---
+   toggleChat() {
+     console.log('🔘 toggleChat fired! isOpen=', this.isOpen);
+     this.isOpen = !this.isOpen;
+     if (this.isOpen) {
+       this.chatContainer.classList.add('open');
+       localStorage.setItem('chatWidgetOpen', 'true');
+       // التركيز على حقل الإدخال عند الفتح
+       setTimeout(() => this.chatInput.focus(), 300);
+     } else {
+       this.chatContainer.classList.remove('open');
+       localStorage.setItem('chatWidgetOpen', 'false');
+     }
+   }
 
-      // إظهار مؤشر الكتابة
-      this._showTypingIndicator();
+   // --- التمرير للأسفل (تبقى كما هي) ---
+   _scrollToBottom() {
+     // استخدام requestAnimationFrame لتمرير أكثر سلاسة بعد التحديث
+     requestAnimationFrame(() => {
+          // تأجيل بسيط إضافي للتأكد من اكتمال الـ rendering
+         setTimeout(() => {
+             this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+         }, 50);
+     });
+   }
 
-      // إرسال الرسالة إلى الخادم
-      const apiUrl = this.getAttribute('api-url');
-      const projectId = this.getAttribute('project-id');
+   // --- دوال إدارة معرف الجلسة ---
+   _loadSessionId() {
+     let id = localStorage.getItem('chatWidgetSessionId');
+     if (!id) {
+       id = this._generateSessionId();
+       localStorage.setItem('chatWidgetSessionId', id);
+     }
+     console.log("Loaded Session ID:", id);
+     return id;
+   }
 
-      this.chatService.sendMessage(apiUrl, {
-        message,
-        session_id: this.sessionId,
-        project_id: projectId
-      })
-      .then(stream => {
-        let fullResponse = '';
+   _generateSessionId() {
+     const newId = 'session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+     console.log("Generated New Session ID:", newId);
+     return newId;
+   }
 
-        stream.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
+   // --- دورة حياة المكون (تحديث بسيط) ---
+   connectedCallback() {
+     const savedState = localStorage.getItem('chatWidgetOpen');
+     if (savedState === 'true') {
+       // تأخير بسيط قبل الفتح للسماح بتهيئة كل شيء
+       setTimeout(() => this.toggleChat(), 100);
+     }
+     // تطبيق السمة عند الاتصال
+     this._applyDirectionAttribute();
+     this._applyDebugAttribute();
+   }
 
-            // معالجة أنواع الأحداث المختلفة
-            if (event.type === 'chunk') {
-              fullResponse += data.content;
-            } else if (event.type === 'end') {
-              // إخفاء مؤشر الكتابة عند انتهاء الرسالة
-              this._hideTypingIndicator();
+   attributeChangedCallback(name, oldValue, newValue) {
+     if (oldValue === newValue) return; // لا تفعل شيئًا إذا لم تتغير القيمة
 
-              // إضافة الرسالة الكاملة
-              if (fullResponse) {
-                this._addMessage({
-                  content: fullResponse,
-                  sender: 'bot'
-                });
-              }
-            } else if (event.type === 'error') {
-              console.error('Error from chat service:', data.message);
-              this._hideTypingIndicator();
-              this._addMessage({
-                content: 'عذراً، حدث خطأ أثناء معالجة طلبك. يرجى المحاولة مرة أخرى.',
-                sender: 'bot'
-              });
-            }
-          } catch (err) {
-            console.error('Error parsing SSE message:', err);
-          }
-        };
+     switch (name) {
+       case 'direction':
+         this._applyDirectionAttribute();
+         break;
+      case 'theme':
+          // يمكن إضافة تحديثات هنا إذا لزم الأمر عند تغيير الثيم ديناميكيًا
+          break;
+      case 'title':
+          const titleEl = this.shadowRoot.querySelector('.header-title');
+          if(titleEl) titleEl.textContent = newValue || 'Chat Assistant';
+          break;
+      case 'subtitle':
+          const subtitleEl = this.shadowRoot.querySelector('.header-subtitle');
+          if(subtitleEl) subtitleEl.textContent = newValue || 'Our virtual agent is here to help you';
+          break;
+      case 'powered-by':
+          const poweredByEl = this.shadowRoot.querySelector('.powered-by');
+          if(poweredByEl) poweredByEl.textContent = newValue || 'Powered by AI';
+          break;
+      case 'avatar':
+          const avatarEl = this.shadowRoot.querySelector('chat-avatar');
+          if(avatarEl) avatarEl.setAttribute('src', newValue || '');
+          break;
+      case 'debug':
+          this._applyDebugAttribute();
+          break;
+       // يمكن إضافة حالات أخرى للسمات عند الحاجة
+     }
+   }
 
-        stream.onerror = (err) => {
-          console.error('SSE Error:', err);
-          this._hideTypingIndicator();
-          this._addMessage({
-            content: 'عذراً، حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.',
-            sender: 'bot'
-          });
-        };
-      })
-      .catch(err => {
-        console.error('Failed to send message:', err);
-        this._hideTypingIndicator();
-        this._addMessage({
-          content: 'عذراً، تعذر الاتصال بالخادم. يرجى التحقق من اتصالك والمحاولة مرة أخرى.',
-          sender: 'bot'
-        });
-      });
-    }
-
-    _showTypingIndicator() {
-      this.isTyping = true;
-
-      const typingEl = document.createElement('typing-indicator');
-      typingEl.setAttribute('avatar', this.getAttribute('avatar') || '');
-      typingEl.id = 'typing-indicator';
-
-      this.messagesContainer.appendChild(typingEl);
-      this._scrollToBottom();
-    }
-
-    _hideTypingIndicator() {
-      this.isTyping = false;
-
-      const typingEl = this.shadowRoot.querySelector('#typing-indicator');
-      if (typingEl) {
-        typingEl.remove();
-      }
-    }
-
-    _clearChat() {
-      // إزالة جميع الرسائل
-      this.messages = [];
-
-      // إفراغ حاوية الرسائل
-      while (this.messagesContainer.firstChild) {
-        this.messagesContainer.removeChild(this.messagesContainer.firstChild);
-      }
-
-      // إعادة إنشاء جلسة جديدة
-      this.sessionId = this._generateSessionId();
-
-      // إضافة رسالة الترحيب
-      setTimeout(() => {
-        this._addMessage({
-          content: this.getAttribute('welcome-message') || 'مرحبًا بك! كيف يمكنني مساعدتك اليوم؟',
-          sender: 'bot'
-        });
-
-        // إظهار الاقتراحات مرة أخرى
-        const suggestionsEl = document.createElement('chat-suggestions');
-        suggestionsEl.suggestions = [
-          'ما هي خدماتكم؟',
-          'كيف يمكنني التواصل معكم؟',
-          'هل لديكم خدمة توصيل؟'
-        ];
-        this.messagesContainer.appendChild(suggestionsEl);
-      }, 300);
-    }
-
-    toggleChat() {
-      this.isOpen = !this.isOpen;
-      if (this.isOpen) {
-        this.chatContainer.classList.add('open');
-        // حفظ حالة النافذة
-        localStorage.setItem('chatWidgetOpen', 'true');
+   // دالة مساعدة لتطبيق سمة direction
+   _applyDirectionAttribute() {
+      const dir = this.getAttribute('direction') || 'rtl'; // افتراضي rtl
+      // لا حاجة لتطبيقها على this.style.direction مباشرة
+      // الأنماط داخل :host([direction="rtl"]) تتعامل معها
+      // قد تحتاج لتحديث عناصر أخرى إذا لم تكن تستجيب للـ CSS direction
+      const input = this.shadowRoot.querySelector('.chat-input');
+      if (input) input.setAttribute('dir', dir);
+   }
+    // دالة مساعدة لتطبيق سمة debug
+   _applyDebugAttribute() {
+      const sessionInfo = this.shadowRoot.querySelector('.session-info');
+      if (!sessionInfo) return;
+      if (this.hasAttribute('debug')) {
+          sessionInfo.style.display = 'block';
       } else {
-        this.chatContainer.classList.remove('open');
-        // حفظ حالة النافذة
-        localStorage.setItem('chatWidgetOpen', 'false');
+          sessionInfo.style.display = 'none';
       }
-    }
+   }
 
-    _scrollToBottom() {
-      setTimeout(() => {
-        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-      }, 100);
-    }
-
-    _generateSessionId() {
-      // محاولة الحصول على معرف جلسة محفوظ
-      const savedSessionId = localStorage.getItem('chatWidgetSessionId');
-      if (savedSessionId) {
-        return savedSessionId;
-      }
-
-      // إنشاء معرف جديد إذا لم يكن موجوداً
-      const newSessionId = 'session_' + Math.random().toString(36).substring(2, 15);
-      localStorage.setItem('chatWidgetSessionId', newSessionId);
-      return newSessionId;
-    }
-
-    connectedCallback() {
-      // التحقق من حالة النافذة المحفوظة
-      const savedState = localStorage.getItem('chatWidgetOpen');
-      if (savedState === 'true') {
-        setTimeout(() => this.toggleChat(), 300);
-      }
-    }
-
-    attributeChangedCallback(name, oldValue, newValue) {
-      // تحديث المكون عند تغيير السمات
-      if (oldValue !== newValue) {
-        switch (name) {
-          case 'direction':
-            this.style.direction = newValue || 'rtl';
-            break;
-        }
-      }
-    }
   }
 
   // تسجيل المكون
@@ -1395,12 +1655,12 @@
         theme: 'light',
         position: 'bottom-right',
         welcomeMessage: 'مرحبًا بك! كيف يمكنني مساعدتك اليوم؟',
-        apiUrl: 'https://api.yourdomain.com/chat/stream',
+        apiUrl: 'https://exadoo-rxr9.onrender.com/bot/chat/stream',
         direction: 'rtl',
         avatar: '',
-        title: 'Chat Assistant',
+        title: 'Exaado Assistant',
         subtitle: 'Our virtual agent is here to help you',
-        poweredBy: 'Powered by AI'
+        poweredBy: 'Powered by EXAADO:exaado.com'
       };
 
       // دمج الخيارات مع الافتراضية
@@ -1410,9 +1670,12 @@
       const chatWidget = document.createElement('chat-widget');
 
       // تعيين السمات
-      Object.keys(config).forEach(key => {
-        chatWidget.setAttribute(key, config[key]);
-      });
+      Object.entries(config).forEach(([key, value]) => {
+      if (value == null || value === '') return;  // نتجنّب السمات الفارغة
+      // حوّل camelCase إلى kebab-case
+      const attr = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      chatWidget.setAttribute(attr, value);
+    });
 
       // إضافة المكون للصفحة
       document.body.appendChild(chatWidget);
@@ -1428,3 +1691,4 @@
   }
 
 })();
+//# sourceMappingURL=widget.js.map
