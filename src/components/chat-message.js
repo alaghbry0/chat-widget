@@ -12,7 +12,7 @@ class ChatMessage extends HTMLElement {
 
   connectedCallback() {
     const sender = this.getAttribute('sender') || 'bot';
-    const avatar = this.getAttribute('avatar') || 'src/profile.png';
+    const avatar = this.getAttribute('avatar') || 'docs/profile.png';
     const messageId = this.getAttribute('message-id') || '';
 
     // قراءة محتوى Markdown الخام
