@@ -1,34 +1,33 @@
-// src/components/chat-message.js
+import { renderMarkdown } from '../utils/renderMarkdown.js';
 
 /**
- * مكون عرض رسائل الدردشة
+ * مكوّن عرض رسائل الدردشة
  */
 class ChatMessage extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+    this._content = '';
   }
 
   connectedCallback() {
-    // الحصول على سمات المكون
     const sender = this.getAttribute('sender') || 'bot';
     const avatar = this.getAttribute('avatar') || '';
     const messageId = this.getAttribute('message-id') || '';
-    const content = this.textContent || '';
 
-    // إعداد CSS
+    // قراءة محتوى Markdown الخام
+    this._content = this.getAttribute('data-md') || this.textContent || '';
+
+    // إعداد CSS جديد يتضمن تنسيقات للقوائم والروابط
     const style = document.createElement('style');
-    style.textContent =
-      :host {
-        display: block;
-        width: 100%;
-      }
+    style.textContent = `
+      :host { display: block; width: 115%; margin-bottom: 16px; }
 
       .message {
         display: flex;
         flex-direction: column;
-        max-width: 85%;
-        animation: fadeIn 0.3s ease-in-out;
+        max-width: 80%;
+        animation: fadeIn 0.3s ease-in-out, slideIn 0.2s ease-out;
       }
 
       .message-user {
@@ -41,13 +40,19 @@ class ChatMessage extends HTMLElement {
         align-items: flex-start;
       }
 
+      .message-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+      }
+
       .avatar {
         width: 28px;
         height: 28px;
         border-radius: 50%;
         margin-right: 8px;
-        background-color: var(--primary-color, #007BFF);
-        color: white;
+        background-color: var(--primary-color);
+        color: #fff;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -55,162 +60,215 @@ class ChatMessage extends HTMLElement {
         font-weight: bold;
       }
 
-      .message-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 4px;
-      }
-
       .message-content {
-        padding: 12px 16px;
-        border-radius: 18px;
+        padding: 5px 10px;
+        border-radius: 16px;
         font-size: 14px;
-        line-height: 1.4;
+        line-height: 1.6;
         position: relative;
+        overflow-wrap: break-word;
+        word-break: break-word;
       }
 
       .message-user .message-content {
-        background-color: var(--message-bg-user, #007BFF);
-        color: var(--message-color-user, #fff);
+        background: linear-gradient(135deg, #007BFF, #0056b3);
+        color: #fff;
         border-bottom-right-radius: 4px;
       }
 
       .message-bot .message-content {
-        background-color: var(--message-bg-bot, #F1F1F1);
-        color: var(--message-color-bot, #333);
+        background: linear-gradient(135deg, #F8F9FA, #FFFFFF);
+        color: #333;
         border-bottom-left-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
       }
 
       .message-time {
         font-size: 11px;
-        color: var(--text-secondary, #666);
+        color: var(--text-secondary);
         margin-top: 4px;
-      }
-
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-
-      /* تنسيق الروابط في الرسائل */
-      .message-content a {
-        color: inherit;
-        text-decoration: underline;
-      }
-
-      .message-content a:hover {
         opacity: 0.8;
       }
 
-      /* تنسيق الأكواد البرمجية في الرسائل */
-      .message-content pre {
-        background-color: rgba(0, 0, 0, 0.05);
-        padding: 8px;
-        border-radius: 4px;
-        overflow-x: auto;
-        margin: 8px 0;
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
 
-      .message-content code {
-        font-family: monospace;
-        font-size: 13px;
+      @keyframes slideIn {
+        from { transform: translateY(10px); }
+        to { transform: translateY(0); }
       }
 
-      /* تنسيق القوائم */
+      /* تنسيقات العناصر في الرسالة */
+      .message-content h1, .message-content h2, .message-content h3 {
+        margin: 12px 0 8px 0;
+        font-weight: 600;
+      }
+
+      .message-content h1 { font-size: 16px; }
+      .message-content h2 { font-size: 14px; }
+      .message-content h3 { font-size: 13px; }
+
+      /* تنسيقات القوائم */
       .message-content ul, .message-content ol {
-        padding-left: 24px;
+        padding-left: 20px;
         margin: 8px 0;
       }
-    ;
 
-    // معالجة محتوى الرسالة
-    const processedContent = this._processMessageContent(content);
-
-    // إنشاء هيكل المكون
-    const messageElement = document.createElement('div');
-    messageElement.className = message message-${sender};
-    messageElement.setAttribute('data-message-id', messageId);
-
-    let avatarHTML = '';
-    if (sender === 'bot') {
-      if (avatar) {
-        avatarHTML = <img class="avatar" src="${avatar}" alt="Bot Avatar">;
-      } else {
-        avatarHTML = <div class="avatar">B</div>;
+      .message-content li {
+        margin-bottom: 4px;
       }
-    }
 
-    const now = new Date();
-    const timeStr = ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')};
+      .message-content li.nested {
+        margin-left: 16px;
+      }
 
-    messageElement.innerHTML =
+      /* تنسيقات الروابط - معدّلة لتشبه الأزرار */
+      .message-content a {
+        color: inherit;
+        text-decoration: none;
+        display: inline-block;
+        padding: 6px 12px;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 16px;
+        transition: background 0.2s ease;
+      }
+
+      .message-user .message-content a {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .message-bot .message-content a {
+        color: #007BFF;
+        background: rgba(0, 123, 255, 0.1);
+      }
+
+      .message-content a::after {
+        content: " ↗";
+        font-size: 0.8em;
+        opacity: 0.8;
+      }
+
+      /* تنسيقات الكود */
+      .message-content code {
+        background: rgba(0,0,0,0.1);
+        border-radius: 3px;
+        padding: 2px 4px;
+        font-family: monospace;
+      }
+
+      .message-user .message-content code {
+        background: rgba(255,255,255,0.2);
+      }
+
+      /* أزرار التفاعل */
+      .message-actions {
+        display: none;
+        position: absolute;
+        top: -16px;
+        right: 0;
+        background: #fff;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .message:hover .message-actions {
+        display: flex;
+      }
+
+      .action-button {
+        padding: 4px 8px;
+        background: #fff;
+        color: #666;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        border-radius: 4px;
+      }
+
+      .action-button:hover {
+        background: #f1f1f1;
+      }
+    `;
+
+    // إنشاء عنصر الرسالة
+    const messageEl = document.createElement('div');
+    messageEl.className = `message message-${sender}`;
+    messageEl.setAttribute('data-message-id', messageId);
+
+    // تحويل Markdown إلى HTML آمن
+    const html = renderMarkdown(this._content);
+
+    messageEl.innerHTML = `
       <div class="message-header">
-        ${sender === 'bot' ? avatarHTML : ''}
+        ${sender === 'bot'
+          ? (avatar
+              ? `<img class="avatar" src="${avatar}" alt="Bot Avatar">`
+              : `<div class="avatar">B</div>`)
+          : ''}
       </div>
-      <div class="message-content">${processedContent}</div>
-      <div class="message-time">${timeStr}</div>
-    ;
+      <div class="message-content">${html}</div>
+      <div class="message-time">${this._formatTime(new Date())}</div>
+      ${sender === 'bot' ? `
+        <div class="message-actions">
+          <button class="action-button copy-btn">نسخ</button>
+        </div>
+      ` : ''}
+    `;
 
-    // إضافة الأنماط والمحتوى للظل
-    this.shadowRoot.appendChild(style);
-    this.shadowRoot.appendChild(messageElement);
-
-    // تفعيل الروابط وأزرار الإجراءات
-    this._activateLinks();
+    this.shadowRoot.append(style, messageEl);
+    this._activateControls();
+    this._setupLinkTargets();
   }
 
-  /**
-   * معالجة محتوى الرسالة لإضافة الروابط والتنسيق
-   */
-  _processMessageContent(content) {
-    // تحويل الروابط العادية إلى روابط قابلة للنقر
-    let processed = content.replace(
-      /(https?:\/\/[^\s]+)/g,
-      '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
-    );
+  // دالة لتحديث محتوى الرسالة (للاستجابة المتدفقة)
+  updateContent(newContent) {
+    if (newContent === this._content) return;
+    this._content = newContent;
 
-    // تحويل أكواد الماركداون البسيطة (مثل `code)
-    processed = processed.replace(
-      /([^]+)/g,
-      '<code>$1</code>'
-    );
-
-    // معالجة أكواد الماركداون متعددة الأسطر
-    processed = processed.replace(
-      /
-([^`]+)
-/g,
-      '<pre><code>$1</code></pre>'
-    );
-
-    // تحويل زر الإجراء (مثال: [زر الإجراء](action:do_something))
-    processed = processed.replace(
-      /\[([^\]]+)\]\(action:([^)]+)\)/g,
-      '<button class="action-button" data-action="$2">$1</button>'
-    );
-
-    return processed;
+    const contentEl = this.shadowRoot.querySelector('.message-content');
+    if (contentEl) {
+      contentEl.innerHTML = renderMarkdown(newContent);
+      this._activateControls();
+      this._setupLinkTargets();
+    }
   }
 
-  /**
-   * تفعيل الروابط وأزرار الإجراءات في الرسالة
-   */
-  _activateLinks() {
-    // الحصول على جميع أزرار الإجراءات
-    const actionButtons = this.shadowRoot.querySelectorAll('.action-button');
-    actionButtons.forEach(button => {
-      button.addEventListener('click', () => {
-        const action = button.getAttribute('data-action');
-        // إرسال حدث للأعلى عند النقر على زر الإجراء
-        this.dispatchEvent(new CustomEvent('action-clicked', {
-          detail: { action },
-          bubbles: true,
-          composed: true
-        }));
+  _activateControls() {
+    // تفعيل زر النسخ
+    const copyBtn = this.shadowRoot.querySelector('.copy-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(this._content)
+        .then(() => {
+          copyBtn.textContent = 'تم النسخ';
+          setTimeout(() => {
+            copyBtn.textContent = 'نسخ';
+          }, 2000);
+        })
+        .catch(err => {
+          console.error('فشل النسخ:', err);
+        });
       });
+    }
+  }
+
+  // دالة جديدة لتعيين target="_blank" للروابط
+  _setupLinkTargets() {
+    const links = this.shadowRoot.querySelectorAll('.message-content a');
+    links.forEach(link => {
+      link.setAttribute('target', '_blank');
+      link.setAttribute('rel', 'noopener noreferrer');
     });
+  }
+
+  _formatTime(date) {
+    const hh = date.getHours().toString().padStart(2, '0');
+    const mm = date.getMinutes().toString().padStart(2, '0');
+    return `${hh}:${mm}`;
   }
 }
 
-// تسجيل المكون
 customElements.define('chat-message', ChatMessage);

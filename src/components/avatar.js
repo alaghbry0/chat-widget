@@ -10,12 +10,15 @@ class ChatAvatar extends HTMLElement {
   }
 
   connectedCallback() {
+    this._render();
+  }
+
+  _render() {
     const src = this.getAttribute('src') || '';
     const fallback = this.getAttribute('fallback') || 'B';
     const bgColor = this.getAttribute('bg-color') || '#007BFF';
-    const size = this.getAttribute('size') || '40px';
+    const size = this.getAttribute('size') || '32px';
 
-    // إعداد CSS
     const style = document.createElement('style');
     style.textContent = `
       :host {
@@ -32,18 +35,33 @@ class ChatAvatar extends HTMLElement {
         justify-content: center;
         font-weight: 600;
         color: white;
-        background-color: ${bgColor};
+        background: linear-gradient(135deg, ${bgColor}, ${this._darkenColor(bgColor, 20)});
         font-size: calc(${size} * 0.4);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s ease-out;
+      }
+
+      .avatar:hover {
+        transform: scale(1.05);
       }
 
       .avatar img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: opacity 0.2s;
+      }
+
+      @keyframes avatarFadeIn {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+      }
+
+      .avatar {
+        animation: avatarFadeIn 0.3s ease-out forwards;
       }
     `;
 
-    // إنشاء هيكل المكون
     const template = document.createElement('template');
 
     if (src) {
@@ -58,9 +76,19 @@ class ChatAvatar extends HTMLElement {
       `;
     }
 
-    // إضافة الأنماط والقالب للظل
+    this.shadowRoot.innerHTML = '';
     this.shadowRoot.appendChild(style);
     this.shadowRoot.appendChild(template.content.cloneNode(true));
+  }
+
+  _darkenColor(color, percent) {
+    // Simple function to darken a hex color
+    const num = parseInt(color.replace('#', ''), 16),
+      amt = Math.round(2.55 * percent),
+      R = (num >> 16) - amt,
+      G = (num >> 8 & 0x00FF) - amt,
+      B = (num & 0x0000FF) - amt;
+    return '#' + (0x1000000 + (R < 0 ? 0 : R) * 0x10000 + (G < 0 ? 0 : G) * 0x100 + (B < 0 ? 0 : B)).toString(16).slice(1);
   }
 
   static get observedAttributes() {
@@ -68,40 +96,10 @@ class ChatAvatar extends HTMLElement {
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    if (oldValue !== newValue && this.shadowRoot) {
-      const avatar = this.shadowRoot.querySelector('.avatar');
-
-      if (!avatar) return;
-
-      if (name === 'src') {
-        let img = avatar.querySelector('img');
-        if (newValue) {
-          if (!img) {
-            img = document.createElement('img');
-            img.setAttribute('alt', 'Avatar');
-            avatar.textContent = '';
-            avatar.appendChild(img);
-          }
-          img.setAttribute('src', newValue);
-        } else if (img) {
-          avatar.textContent = this.getAttribute('fallback') || 'B';
-          img.remove();
-        }
-      } else if (name === 'fallback') {
-        const img = avatar.querySelector('img');
-        if (!img) {
-          avatar.textContent = newValue || 'B';
-        }
-      } else if (name === 'bg-color') {
-        avatar.style.backgroundColor = newValue;
-      } else if (name === 'size') {
-        avatar.style.width = newValue;
-        avatar.style.height = newValue;
-        avatar.style.fontSize = `calc(${newValue} * 0.4)`;
-      }
+    if (oldValue !== newValue) {
+      this._render();
     }
   }
 }
 
-// تسجيل المكون
 customElements.define('chat-avatar', ChatAvatar);

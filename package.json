@@ -5,12 +5,12 @@
   "main": "dist/widget.js",
   "module": "src/index.js",
   "scripts": {
-  "dev": "rollup -c -w",
-  "build": "rollup -c",
-  "start": "serve .",
-  "start:dist": "serve dist",
-  "prepublishOnly": "npm run build"
-},
+    "dev": "rollup -c -w",
+    "build": "rollup -c",
+    "start": "serve .",
+    "start:dist": "serve dist",
+    "prepublishOnly": "npm run build"
+  },
   "keywords": [
     "chat",
     "widget",
@@ -39,5 +39,9 @@
     "last 2 Firefox versions",
     "last 2 Safari versions",
     "last 2 Edge versions"
-  ]
+  ],
+  "dependencies": {
+    "dompurify": "^3.2.5",
+    "marked": "^15.0.11"
+  }
 }

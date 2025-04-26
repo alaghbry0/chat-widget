@@ -13,14 +13,14 @@ export default {
   output: [
     // الإعدادات الحالية
     {
-      file: 'dist/widget.js',
+      file: 'docs/widget.js',
       format: 'iife',
       name: 'ChatWidget',
       sourcemap: !production
     },
     // نسخة مصغرة للإنتاج
     {
-      file: 'dist/widget.min.js',
+      file: 'docs/widget.min.js',
       format: 'iife',
       name: 'ChatWidget',
       plugins: [terser()],
@@ -47,16 +47,16 @@ export default {
     copy({
       targets: [
         {
-          src: 'test.html',
-          dest: 'dist/',
+          src: 'docs/widget.min.js',
+          dest: 'docs/',
           transform: (contents) => {
             // تعديل مسار السكريبت في ملف test.html
             return contents.toString()
-              .replace('./dist/widget.js', './widget.js');
+              .replace('./docs/widget.js', './widget.js');
           }
         },
         // يمكنك إضافة ملفات أخرى هنا إذا كنت بحاجة إليها
-        { src: 'public/assets/*', dest: 'dist/assets/' }
+        { src: 'public/assets/*', dest: 'docs/assets/' }
       ]
     })
   ],

@@ -5,6 +5,7 @@ class ChatButton extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+    this.isOpen = false;
 
     // إعداد الأنماط
     const style = document.createElement('style');
@@ -15,10 +16,10 @@ class ChatButton extends HTMLElement {
 
       .chat-bubble {
         position: fixed;
-        bottom: 24px;
-        right: 24px;
-        width: 56px;
-        height: 56px;
+        bottom: 20px;
+        right: 26px;
+        width: 50px;
+        height: 50px;
         background-color: var(--primary-color, #007BFF);
         border-radius: 50%;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -48,6 +49,11 @@ class ChatButton extends HTMLElement {
         stroke-width: 2;
         stroke-linecap: round;
         stroke-linejoin: round;
+        transition: transform 0.3s ease;
+      }
+
+      .chat-bubble.open svg {
+        transform: rotate(180deg);
       }
 
       @keyframes pulse {
@@ -72,7 +78,7 @@ class ChatButton extends HTMLElement {
     template.innerHTML = `
       <div class="chat-bubble pulse">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          <path d="M18 15l-6-6-6 6"></path>
         </svg>
       </div>
     `;
@@ -85,14 +91,18 @@ class ChatButton extends HTMLElement {
     this.bubbleElement = this.shadowRoot.querySelector('.chat-bubble');
   }
 
- connectedCallback() {
-     this.bubbleElement.addEventListener('click', () => {
-   // فقط إزالة النبضة عند الضغط
-
-   // لا حاجة الآن لإعادة dispatch لحدث "click" لأنّه يخرج تلقائياً للـ host
- });
-
-  }  // ← قوس يغلق connectedCallback هنا
+  connectedCallback() {
+    this.bubbleElement.addEventListener('click', () => {
+      this.bubbleElement.classList.remove('pulse');
+      // تبديل حالة الفتح/الإغلاق
+      this.isOpen = !this.isOpen;
+      if (this.isOpen) {
+        this.bubbleElement.classList.add('open');
+      } else {
+        this.bubbleElement.classList.remove('open');
+      }
+    });
+  }
 
   attributeChangedCallback(name, oldValue, newValue) {
     if (name === 'position' && oldValue !== newValue) {

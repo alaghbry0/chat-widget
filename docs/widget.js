@@ -4924,7 +4924,7 @@
     --message-color-user: #fff;
     --message-bg-bot: linear-gradient(180deg, #F8F9FA, #FFFFFF);
     --message-color-bot: #666;
-    --border-color: #E6E6E6;
+    --border-color: #4a4747;
     --footer-bg: rgba(249, 250, 251, 0.8);
     --bubble-size: 56px;
     --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -4939,7 +4939,7 @@
   :host([theme="dark"]) {
     --primary-color: #375FFF;
     --primary-hover: #2D4ECC;
-    --bg-color: #1E1E1E;
+    --bg-color: #F0F0F0;
     --header-bg: #2D2D2D;
     --header-dark: #0F172A;
     --text-color: #fff;
@@ -5116,28 +5116,29 @@
   }
 
   .chat-footer {
-    padding: 16px;
-    background-color: var(--footer-bg);
-    border-top: 1px solid var(--border-color);
-    backdrop-filter: blur(10px);
+  padding: 12px 16px; /* تقليل padding العلوي والسفلي قليلاً */
+  background-color: var(--footer-bg);
+  border-top: 1px solid var(--border-color);
   }
+    .input-area {
+  margin-bottom: 8px; /* إضافة مسافة بين حقل الإدخال والنص السفلي */
+}
 
-  .input-group {
-    display: flex;
-    align-items: end;
-    gap: 8px;
-  }
 
   .chat-input-wrapper {
-    flex: 1;
-    position: relative;
-    background-color: var(--bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 9999px;
-    padding: 8px 12px;
-  }
+  flex: 1;
+  display: flex; /* <<< تعديل: استخدام flex لتوزيع العناصر الداخلية */
+  align-items: center; /* <<< تعديل: محاذاة العناصر عموديًا في المنتصف */
+  position: relative;
+  background-color: var(--bg-color); /* أو #F0F0F0 لخلفية رمادية فاتحة */
+  border: 2px solid var(--border-color);
+  border-radius: 15px;
+  padding: 4px 8px 4px 16px; /* <<< تعديل: ضبط الحشو الداخلي */
+  gap: 8px; /* مسافة بين العناصر الداخلية */
+}
 
-  .chat-input {
+
+.chat-input {
     width: 100%;
     min-height: 11px;
     max-height: 150px;
@@ -5161,63 +5162,88 @@
 
   .chat-input::-webkit-scrollbar-thumb {
     background-color: var(--border-color);
-    border-radius: 2px;
+    border-radius: 4px;
   }
 
-  .send-button {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.2s;
-    flex-shrink: 0;
-  }
 
-  .send-button:hover {
-    background-color: var(--primary-hover);
-  }
+/* --- نمط جديد لزر الميكروفون --- */
+.mic-button {
+  width: 32px; /* حجم مناسب */
+  height: 32px;
+  border-radius: 50%;
+  background: none; /* بدون خلفية */
+  color: var(--text-secondary); /* لون الأيقونة */
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s;
+  flex-shrink: 0;
+  padding: 0;
+}
 
-  .send-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+.mic-button:hover {
+  color: var(--text-color); /* تغيير اللون عند المرور */
+}
 
-  .send-button svg {
-    width: 18px;
+.mic-button svg {
+    width: 18px; /* حجم الأيقونة */
     height: 18px;
-  }
+}
 
-  .footer-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 12px;
-    font-size: 12px;
-  }
 
-  .footer-button {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 12px;
-    cursor: pointer;
-    padding: 4px 8px;
-  }
+.send-button {
+  width: 36px; /* <<< تعديل: حجم الزر الدائري */
+  height: 36px;
+  border-radius: 50%;
+  /* <<< تعديل: تغيير لون الخلفية ليتناسب مع التصميم الجديد */
+  background-color: #E0E0E0; /* لون رمادي فاتح كالمثال */
+  /* أو يمكن استخدام متغير CSS إذا كان لديك واحد مناسب */
+  /* background-color: var(--border-color); */
+  color: var(--text-secondary); /* <<< تعديل: لون الأيقونة الافتراضي */
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, transform 0.2s;
+  flex-shrink: 0;
+}
 
-  .footer-button:hover {
-    color: var(--primary-color);
-  }
+.send-button:not(:disabled) { /* نمط زر الإرسال عندما يكون فعالاً */
+    background-color: var(--primary-color); /* <<< تعديل: العودة للون الأساسي عند التفعيل */
+    color: white; /* <<< تعديل: لون الأيقونة عند التفعيل */
+}
 
-  .powered-by {
-    font-size: 12px;
-    color: var(--text-secondary);
-  }
+.send-button:not(:disabled):hover {
+  background-color: var(--primary-hover); /* <<< تعديل: لون عند المرور وهو فعال */
+}
+
+.send-button:disabled {
+  background-color: #E9ECEF; /* لون رمادي فاتح جداً عند التعطيل */
+  color: #ADB5BD; /* لون أيقونة باهت */
+  opacity: 1; /* لا نحتاج لـ opacity هنا لأننا نغير الألوان */
+  cursor: not-allowed;
+}
+
+.send-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* تمت إعادة تسمية الكلاس وتعديل النمط */
+.footer-powered-by {
+  text-align: center; /* <<< تعديل: توسيط النص */
+  margin-top: 8px; /* مسافة أعلى النص */
+  width: 100%; /* يأخذ العرض كامل للتوسيط */
+}
+
+/* تعديل نمط النص إذا لزم الأمر */
+.powered-by {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
 
   .typing-bubble {
     background: transparent;
@@ -5327,124 +5353,133 @@
 
   _render() {
     const styleEl = document.createElement('style');
-    styleEl.textContent = styles; // الأنماط الأساسية تبقى كما هي
+    styleEl.textContent = styles; // الأنماط المعدلة أدناه
 
     const template = document.createElement('template');
     template.innerHTML = `
     <div class="chat-container">
       <div class="chat-header">
-        <div class="top-bar">
-          <chat-avatar
-            size="24px"
-            src="${this.getAttribute('avatar') || 'profile.png'}"
-            fallback="${(this.getAttribute('title') || 'Bot').charAt(0)}"
-            bg-color="var(--primary-color)">
-          </chat-avatar>
-          <h4 class="top-bar-title">${this.getAttribute('title') || 'Chat Assistant'}</h4>
-          <div class="top-bar-actions">
-            <button class="top-bar-button refresh-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
-              </svg>
-            </button>
-            <button class="top-bar-button close-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 6 6 18M6 6l12 12"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        </div>
+         <div class="top-bar">
+           <chat-avatar
+             size="24px"
+             src="${this.getAttribute('avatar') || 'profile.png'}"
+             fallback="${(this.getAttribute('title') || 'Bot').charAt(0)}"
+             bg-color="var(--primary-color)">
+           </chat-avatar>
+           <h4 class="top-bar-title">${this.getAttribute('title') || 'Chat Assistant'}</h4>
+           <div class="top-bar-actions">
+             <button class="top-bar-button refresh-btn">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                 <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
+               </svg>
+             </button>
+             <button class="top-bar-button close-btn">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                 <path d="M18 6 6 18M6 6l12 12"/>
+               </svg>
+             </button>
+           </div>
+         </div>
+         </div>
 
-      <div class="messages-container" id="messages" aria-live="polite">
-        <div class="welcome-message">
-          <chat-avatar
-            class="welcome-avatar"
-            size="75px"
-            src="${this.getAttribute('avatar') || 'profile.png'}"
-            fallback="${(this.getAttribute('title') || 'Bot').charAt(0)}"
-            bg-color="var(--primary-color)">
-          </chat-avatar>
-          <h3 class="welcome-title">${this.getAttribute('title') || 'Chat Assistant'}</h3>
-          <p class="welcome-subtitle">${this.getAttribute('subtitle') || 'Our virtual agent is here to help you'}</p>
-        </div>
-        </div>
-
+       <div class="messages-container" id="messages" aria-live="polite">
+         <div class="welcome-message">
+           <chat-avatar
+             class="welcome-avatar"
+             size="75px"
+             src="${this.getAttribute('avatar') || 'profile.png'}"
+             fallback="${(this.getAttribute('title') || 'Bot').charAt(0)}"
+             bg-color="var(--primary-color)">
+           </chat-avatar>
+           <h3 class="welcome-title">${this.getAttribute('title') || 'Chat Assistant'}</h3>
+           <p class="welcome-subtitle">${this.getAttribute('subtitle') || 'Our virtual agent is here to help you'}</p>
+         </div>
+         </div>
       <div class="chat-footer">
-        <div class="input-group">
+        <div class="input-area">
           <div class="chat-input-wrapper">
-            <textarea class="chat-input" placeholder="اكتب رسالة..." rows="1"></textarea>
+            <textarea class="chat-input" placeholder="Message..." rows="1"></textarea>
+            <button class="mic-button" aria-label="Voice input">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </button>
+            <button class="send-button" disabled aria-label="Send message">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5"></line>
+                <polyline points="5 12 12 5 19 12"></polyline>
+              </svg>
+            </button>
           </div>
-          <button class="send-button" disabled>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
         </div>
-        <div class="footer-actions">
-          <button class="footer-button new-chat-btn">محادثة جديدة</button>
+        <div class="footer-powered-by">
           <span class="powered-by">${this.getAttribute("powered-by") || 'Powered by AI'}</span>
         </div>
       </div>
-    </div>
+      </div>
 
     <chat-button></chat-button>
   `;
 
+    this.shadowRoot.innerHTML = ''; // Clear previous content
     this.shadowRoot.appendChild(styleEl);
     this.shadowRoot.appendChild(template.content.cloneNode(true));
 
-    // تخزين المراجع للعناصر المهمة
+    // إعادة تخزين المراجع للعناصر المهمة بعد التعديل
     this.chatContainer = this.shadowRoot.querySelector('.chat-container');
     this.messagesContainer = this.shadowRoot.querySelector('#messages');
     this.chatInput = this.shadowRoot.querySelector('.chat-input');
     this.sendButton = this.shadowRoot.querySelector('.send-button');
     this.chatButton = this.shadowRoot.querySelector('chat-button');
+    this.micButton = this.shadowRoot.querySelector('.mic-button'); // Reference for mic button if needed
 
-    // إضافة الأنماط اللازمة للترحيب (تم تعديل التباعد العلوي)
-    const additionalStyles = document.createElement('style');
-    additionalStyles.textContent = `
-    /* === بداية تعديل الأنماط === */
-    .welcome-message {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    // ... (باقي الكود في _render كما هو، مثل إضافة additionalStyles للترحيب)
+      // إضافة الأنماط اللازمة للترحيب (تم تعديل التباعد العلوي)
+      const additionalStyles = document.createElement('style');
+      additionalStyles.textContent = `
+      /* === بداية تعديل الأنماط === */
+      .welcome-message {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
 
-      /* --- التعديل هنا: تقليل التباعد العلوي --- */
-      padding: 80px 0 10px 0; /* مثال: 30px للأعلى، 20px للأسفل */
-      gap: 8px;
-      animation: fadeIn 0.5s ease;
-    }
+        /* --- التعديل هنا: تقليل التباعد العلوي --- */
+        padding: 80px 0 10px 0; /* مثال: 30px للأعلى، 20px للأسفل */
+        gap: 8px;
+        animation: fadeIn 0.5s ease;
+      }
 
-    .welcome-avatar {
-    margin-bottom: 10px;
-       /* لا توجد أنماط خاصة مطلوبة هنا الآن */
-    }
+      .welcome-avatar {
+      margin-bottom: 10px;
+         /* لا توجد أنماط خاصة مطلوبة هنا الآن */
+      }
 
-    .welcome-title {
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--text-color);
-      margin: 0;
-      text-align: center;
-    }
+      .welcome-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0;
+        text-align: center;
+      }
 
-    .welcome-subtitle {
-      font-size: 14px;
-      font-weight: 400;
-      color: var(--text-secondary);
-      margin: 0;
-      text-align: center;
-    }
-    /* === نهاية تعديل الأنماط === */
+      .welcome-subtitle {
+        font-size: 14px;
+        font-weight: 400;
+        color: var(--text-secondary);
+        margin: 0;
+        text-align: center;
+      }
+      /* === نهاية تعديل الأنماط === */
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-  `;
-    this.shadowRoot.appendChild(additionalStyles);
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+    `;
+      this.shadowRoot.appendChild(additionalStyles);
   }
 
     _setupEventListeners() {

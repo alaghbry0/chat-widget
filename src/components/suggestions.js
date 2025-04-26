@@ -28,7 +28,6 @@ class ChatSuggestions extends HTMLElement {
   }
 
   _render() {
-    // إعداد CSS
     const style = document.createElement('style');
     style.textContent = `
       :host {
@@ -44,24 +43,26 @@ class ChatSuggestions extends HTMLElement {
       }
 
       .suggestion {
-        background-color: var(--message-bg-bot, #F1F1F1);
+        background: linear-gradient(to right, #F8F9FA, #FFFFFF);
         color: var(--text-color, #333);
         border: 1px solid var(--border-color, #E6E6E6);
         border-radius: 16px;
         padding: 8px 16px;
         font-size: 13px;
         cursor: pointer;
-        transition: background-color 0.2s, transform 0.2s;
+        transition: all 0.2s;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 200px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       }
 
       .suggestion:hover {
-        background-color: var(--primary-color, #007BFF);
+        background: linear-gradient(to right, var(--primary-color, #007BFF), var(--primary-hover, #0056b3));
         color: white;
         transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       }
 
       .title {
@@ -84,30 +85,37 @@ class ChatSuggestions extends HTMLElement {
       .suggestion:nth-child(2) { animation-delay: 0.2s; }
       .suggestion:nth-child(3) { animation-delay: 0.3s; }
       .suggestion:nth-child(4) { animation-delay: 0.4s; }
+
+      @media (max-width: 576px) {
+        .suggestions {
+          gap: 6px;
+        }
+
+        .suggestion {
+          padding: 6px 12px;
+          font-size: 12px;
+        }
+      }
     `;
 
-    // إنشاء هيكل المكون
     const container = document.createElement('div');
     container.innerHTML = `
       <div class="title">يمكنك أن تسأل:</div>
       <div class="suggestions">
         ${this._suggestions.map(suggestion => `
-          <button class="suggestion">${suggestion}</button>
+          <button class="suggestion" aria-label="${suggestion}">${suggestion}</button>
         `).join('')}
       </div>
     `;
 
-    // إفراغ الظل وإضافة المحتوى الجديد
     this.shadowRoot.innerHTML = '';
     this.shadowRoot.appendChild(style);
     this.shadowRoot.appendChild(container);
 
-    // إضافة مستمعي الأحداث للاقتراحات
     const suggestionButtons = this.shadowRoot.querySelectorAll('.suggestion');
     suggestionButtons.forEach(button => {
       button.addEventListener('click', () => {
         const suggestion = button.textContent;
-        // إرسال حدث للأعلى عند النقر على اقتراح
         this.dispatchEvent(new CustomEvent('suggestion-clicked', {
           detail: { suggestion },
           bubbles: true,
@@ -118,5 +126,4 @@ class ChatSuggestions extends HTMLElement {
   }
 }
 
-// تسجيل المكون
 customElements.define('chat-suggestions', ChatSuggestions);
