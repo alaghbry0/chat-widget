@@ -5430,7 +5430,7 @@
           </div>
         </div>
         <div class="footer-powered-by">
-          <span class="powered-by">${this.getAttribute("powered-by") || 'Powered by AI'}</span>
+          <span class="powered-by">${this.getAttribute("powered-by") || 'Powered by Exaado'}</span>
         </div>
       </div>
       </div>
