@@ -12,14 +12,14 @@ const styles = `
     --primary-color: #007BFF;
     --primary-hover: #0069d9;
     --bg-color: #fff;
-    --header-bg: #E6F0FA;
+    --header-bg: #467df2;
     --text-color: #333;
     --text-secondary: #666;
     --message-bg-user: linear-gradient(180deg, #007BFF, #0056B3);
     --message-color-user: #fff;
     --message-bg-bot: linear-gradient(180deg, #F8F9FA, #FFFFFF);
     --message-color-bot: #666;
-    --border-color: #4a4747;
+    --border-color: #f7eded;
     --footer-bg: rgba(249, 250, 251, 0.8);
     --bubble-size: 56px;
     --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -48,7 +48,7 @@ const styles = `
   }
 
   :host([position="bottom-right"]) .chat-container {
-    bottom: calc(var(--bubble-size) + 16px);
+    bottom: calc(var(--bubble-size) + 17px);
     right: 24px;
     left: auto;
   }
@@ -109,7 +109,7 @@ const styles = `
 }
 
   .top-bar {
-    height: 50px;
+    height: 55px;
     background-color: var(--header-dark);
     display: flex;
     justify-content: space-between;
@@ -413,38 +413,52 @@ class ChatWidget extends HTMLElement {
     ];
   }
 
-    _initialize() {
-    // إنشاء خدمة الدردشة
-    this.chatService = new ChatService();
-    this.suggestionsElement = null; // --- إضافة لتعريف الخاصية ---
+    _resetChat() {
+   console.log('🔄 Resetting chat to initial state...');
 
-    // التهيئة الأساسية للمكون
-    this._render();
-    this._setupEventListeners();
+   // 1. مسح مصفوفة الرسائل
+   this.messages = [];
 
-    // إضافة رسالة الترحيب والاقتراحات
-    setTimeout(() => {
-      // إضافة رسالة الترحيب أولاً
-      this._addMessage({
-        content: this.getAttribute('welcome-message') || 'مرحبًا بك! كيف يمكنني مساعدتك اليوم؟',
-        sender: 'bot'
-      });
+   // 2. إنشاء معرف جلسة جديد
+   this.sessionId = this._generateSessionId(true);
 
-      // --- إضافة الاقتراحات هنا ---
-      const suggestionsEl = document.createElement('chat-suggestions');
-      suggestionsEl.suggestions = [
-        'ما هي خدماتكم؟',
-        'كيف يمكنني التواصل معكم؟',
-        'هل لديكم خدمة توصيل؟'
-      ];
-      this.messagesContainer.appendChild(suggestionsEl);
-      this.suggestionsElement = suggestionsEl; // --- تخزين المرجع ---
-      this._scrollToBottom(); // التمرير للأسفل بعد إضافة الاقتراحات
+   // 3. إعادة بناء الواجهة بالكامل
+   this._render(); // يعيد بناء العناصر الداخلية
 
-    }, 300);
-  }
+   // 4. استعادة حالة الرؤية
+   if (this.isOpen) {
+     if (this.chatContainer) {
+       this.chatContainer.classList.add('open');
+       console.log('Restored .open class after reset.');
+     } else {
+       console.error("Chat container not found immediately after render in _resetChat.");
+     }
+   }
 
+   // --- 5. إعادة ربط المستمعات الداخلية بالعناصر الجديدة ---
+   this._setupInternalListeners();
+
+   // 6. إعادة إضافة رسالة الترحيب النصية والاقتراحات
+   this._setupInitialChatState();
+
+   console.log("Chat reset complete.");
+ }
   // تعديل دالة _render في class ChatWidget
+
+  _initialize() {
+   // إنشاء خدمة الدردشة
+   this.chatService = new ChatService();
+   this.suggestionsElement = null;
+
+   // التهيئة الأساسية للمكون
+   this._render(); // 1. بناء الواجهة الأولية
+   this._setupComponentListeners(); // 2. ربط المستمعات الخارجية (مرة واحدة)
+   this._setupInternalListeners(); // 3. ربط المستمعات الداخلية (لأول مرة)
+   this._setupInitialChatState(); // 4. إضافة رسالة الترحيب والاقتراحات
+
+   console.log("Chat widget initialized.");
+ }
+
 
 _render() {
   const styleEl = document.createElement('style');
@@ -457,11 +471,11 @@ _render() {
          <div class="top-bar">
            <chat-avatar
              size="24px"
-             src="${this.getAttribute('avatar') || 'profile.png'}"
+             src="${this.getAttribute('avatar') || 'src/profile.png'}"
              fallback="${(this.getAttribute('title') || 'Bot').charAt(0)}"
              bg-color="var(--primary-color)">
            </chat-avatar>
-           <h4 class="top-bar-title">${this.getAttribute('title') || 'Chat Assistant'}</h4>
+           <h4 class="top-bar-title">${this.getAttribute('title') || 'Exaado Assistant'}</h4>
            <div class="top-bar-actions">
              <button class="top-bar-button refresh-btn">
                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -482,11 +496,11 @@ _render() {
            <chat-avatar
              class="welcome-avatar"
              size="75px"
-             src="${this.getAttribute('avatar') || 'profile.png'}"
+             src="${this.getAttribute('avatar') || 'src/profile.png'}"
              fallback="${(this.getAttribute('title') || 'Bot').charAt(0)}"
              bg-color="var(--primary-color)">
            </chat-avatar>
-           <h3 class="welcome-title">${this.getAttribute('title') || 'Chat Assistant'}</h3>
+           <h3 class="welcome-title">${this.getAttribute('title') || 'Exaado Assistant'}</h3>
            <p class="welcome-subtitle">${this.getAttribute('subtitle') || 'Our virtual agent is here to help you'}</p>
          </div>
          </div>
@@ -577,77 +591,44 @@ _render() {
     this.shadowRoot.appendChild(additionalStyles);
 }
 
-  _setupEventListeners() {
-    // زر فتح الدردشة
-    this.chatButton.addEventListener('click', () => {
-      this.toggleChat();
-    });
+  _setupComponentListeners() { // تم تغيير الاسم
+   console.log('🔗 Setting up component listeners (run once)...'); // للتأكد
 
-    // زر إرسال الرسالة
-    this.sendButton.addEventListener('click', () => {
-      this._sendMessage();
-    });
+   // زر فتح الدردشة الرئيسي (خارج الجزء المعاد رسمه)
+   // تأكد من أن chatButton موجود (يجب أن يكون موجودًا بعد أول _render)
+   if (this.chatButton) {
+       // --- هام: تأكد من عدم إضافة المستمع أكثر من مرة ---
+       // طريقة بسيطة: استخدام خاصية للإشارة إلى أنه تم الربط
+       if (!this.chatButton._listenerAttached) {
+            this.chatButton.addEventListener('click', () => {
+                this.toggleChat();
+            });
+            this.chatButton._listenerAttached = true; // وضع علامة
+       }
+   } else {
+       console.error("Chat button not found for component listener setup.");
+   }
 
-    // الإرسال عند الضغط على Enter (بدون Shift)
-    this.chatInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        this._sendMessage();
-      }
-    });
+   // اختصارات لوحة المفاتيح (على مستوى المستند)
+   // --- هام: تأكد من عدم إضافة المستمع أكثر من مرة ---
+   if (!document._chatWidgetKeyListenerAttached) {
+        document.addEventListener('keydown', (e) => {
+            // / لتركيز حقل الإدخال
+            // تأكد من أن chatInput موجود ومرئي قبل محاولة التركيز
+            if (e.key === '/' && this.isOpen && this.chatInput && document.activeElement !== this.chatInput) {
+                e.preventDefault();
+                this.chatInput.focus();
+            }
+            // Esc لإغلاق الدردشة
+            if (e.key === 'Escape' && this.isOpen) {
+                this.toggleChat();
+            }
+        });
+        document._chatWidgetKeyListenerAttached = true; // وضع علامة
+    }
 
-    // التكبير التلقائي لحقل الإدخال
-    this.chatInput.addEventListener('input', () => {
-      this._autoResizeTextarea();
-      this.sendButton.disabled = !this.chatInput.value.trim();
-    });
-
-    // زر المحادثة الجديدة
-    const newChatButtons = this.shadowRoot.querySelectorAll('.new-chat-btn');
-    newChatButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        this._clearChat();
-      });
-    });
-
-    // زر الإغلاق
-    const closeButtons = this.shadowRoot.querySelectorAll('.close-btn');
-    closeButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.toggleChat();
-      });
-    });
-
-    // زر التحديث
-    const refreshButton = this.shadowRoot.querySelector('.refresh-btn');
-    refreshButton.addEventListener('click', () => {
-      this._clearChat();
-    });
-
-    // الاستماع لأحداث اقتراحات الدردشة
-    this.shadowRoot.addEventListener('suggestion-clicked', (e) => {
-      const { suggestion } = e.detail;
-      this.chatInput.value = suggestion;
-      this._autoResizeTextarea();
-      this._sendMessage();
-    });
-
-    // إضافة مستمع للتمرير لإخفاء الهيدر
-    this.messagesContainer.addEventListener('scroll', this._handleScroll.bind(this));
-
-    // اختصارات لوحة المفاتيح
-    document.addEventListener('keydown', (e) => {
-      // / لتركيز حقل الإدخال
-      if (e.key === '/' && this.isOpen && document.activeElement !== this.chatInput) {
-        e.preventDefault();
-        this.chatInput.focus();
-      }
-      // Esc لإغلاق الدردشة
-      if (e.key === 'Escape' && this.isOpen) {
-        this.toggleChat();
-      }
-    });
-  }
+   // --- إزالة الكود الذي تم نقله إلى _setupInternalListeners ---
+ }
 
   // دالة للتعامل مع حدث التمرير
   _handleScroll(event) {
@@ -946,6 +927,48 @@ _render() {
     }, 300);
   }
 
+   _setupInitialChatState() {
+   // إضافة رسالة الترحيب والاقتراحات بعد تأخير بسيط
+   setTimeout(() => {
+     // التأكد من أن حاوية الرسائل موجودة بعد إعادة الرسم المحتملة
+     if (!this.messagesContainer) {
+       console.error("Messages container not found after reset.");
+       return;
+     }
+
+     // إزالة أي رسالة ترحيب نصية قديمة أو اقتراحات إذا وجدت (احتياطي)
+     const existingWelcomeMsg = this.messagesContainer.querySelector('chat-message[sender="bot"]');
+     const existingSuggestions = this.messagesContainer.querySelector('chat-suggestions');
+     if (existingWelcomeMsg && this.messages.length === 0) existingWelcomeMsg.remove(); // فقط إذا كانت الرسائل فارغة
+     if (existingSuggestions) existingSuggestions.remove();
+
+
+     // --- الجزء المنقول من _initialize ---
+     // إضافة رسالة الترحيب أولاً (كنص)
+     this._addMessage({
+       content: this.getAttribute('welcome-message') || 'مرحبًا بك! كيف يمكنني مساعدتك اليوم؟',
+       sender: 'bot'
+     });
+
+     // --- إضافة الاقتراحات هنا ---
+     const suggestionsEl = document.createElement('chat-suggestions');
+     suggestionsEl.suggestions = [
+       'ما هي خدماتكم؟',
+       'كيف يمكنني التواصل معكم؟',
+       'هل لديكم خدمة توصيل؟'
+       // يمكنك تحديث هذه الاقتراحات أو جعلها ديناميكية إذا أردت
+     ];
+     // تأكد من أن الرسالة الترحيبية تم إضافتها قبل إضافة الاقتراحات
+     // قد تحتاج لتأخير بسيط آخر أو استخدام Promise إذا كانت _addMessage غير متزامنة تمامًا
+     // لكن بما أنها متزامنة هنا، يمكن إضافتها مباشرة
+     this.messagesContainer.appendChild(suggestionsEl);
+     this.suggestionsElement = suggestionsEl; // --- تخزين المرجع ---
+     this._scrollToBottom(); // التمرير للأسفل بعد إضافة الاقتراحات
+     // --- نهاية الجزء المنقول ---
+
+   }, 300); // نفس التأخير المستخدم سابقاً
+ }
+
   toggleChat() {
     console.log('🔘 toggleChat fired! isOpen=', this.isOpen);
     this.isOpen = !this.isOpen;
@@ -964,18 +987,20 @@ _render() {
     }, 100);
   }
 
-  _generateSessionId() {
-    // محاولة الحصول على معرف جلسة محفوظ
-    const savedSessionId = localStorage.getItem('chatWidgetSessionId');
-    if (savedSessionId) {
-      return savedSessionId;
-    }
+  _generateSessionId(forceNew = false) {
+   // محاولة الحصول على معرف جلسة محفوظ
+   const savedSessionId = localStorage.getItem('chatWidgetSessionId');
+   if (savedSessionId && !forceNew) { // التحقق من forceNew
+     return savedSessionId;
+   }
 
-    // إنشاء معرف جديد إذا لم يكن موجوداً
-    const newSessionId = 'session_' + Math.random().toString(36).substring(2, 15);
-    localStorage.setItem('chatWidgetSessionId', newSessionId);
-    return newSessionId;
-  }
+   // إنشاء معرف جديد
+   const newSessionId = 'session_' + Math.random().toString(36).substring(2, 15);
+   localStorage.setItem('chatWidgetSessionId', newSessionId);
+   console.log('Generated new session ID:', newSessionId); // للتصحيح
+   return newSessionId;
+ }
+
 
   connectedCallback() {
     // التحقق من حالة النافذة المحفوظة
@@ -984,6 +1009,93 @@ _render() {
       setTimeout(() => this.toggleChat(), 300);
     }
   }
+
+
+
+ // ===== دالة جديدة لربط الأحداث الداخلية =====
+ _setupInternalListeners() {
+   console.log('🔗 Setting up internal listeners...'); // للتأكد
+
+   // التأكد من وجود العناصر قبل ربط الأحداث (هام بعد إعادة الرسم)
+   if (!this.sendButton || !this.chatInput || !this.messagesContainer || !this.shadowRoot) {
+     console.error("One or more internal elements not found for listener setup.");
+     return;
+   }
+
+   // --- الكود المنقول من _setupEventListeners ---
+
+   // زر إرسال الرسالة
+   this.sendButton.addEventListener('click', () => {
+     this._sendMessage();
+   });
+
+   // الإرسال عند الضغط على Enter (بدون Shift)
+   this.chatInput.addEventListener('keydown', (e) => {
+     if (e.key === 'Enter' && !e.shiftKey) {
+       e.preventDefault();
+       this._sendMessage();
+     }
+   });
+
+   // التكبير التلقائي لحقل الإدخال وتمكين/تعطيل زر الإرسال
+   this.chatInput.addEventListener('input', () => {
+     this._autoResizeTextarea();
+     // تأكد من أن sendButton موجود قبل تعديل حالته
+     if(this.sendButton) {
+        this.sendButton.disabled = !this.chatInput.value.trim();
+     }
+   });
+
+   // زر الإغلاق (داخل النافذة)
+   const closeButtons = this.shadowRoot.querySelectorAll('.close-btn');
+   closeButtons.forEach(btn => {
+     btn.addEventListener('click', () => {
+       this.toggleChat();
+     });
+   });
+
+   // زر التحديث (داخل النافذة)
+   const refreshButton = this.shadowRoot.querySelector('.refresh-btn');
+   if (refreshButton) {
+     refreshButton.addEventListener('click', () => {
+       this._resetChat();
+     });
+   } else {
+     console.warn("Refresh button (.refresh-btn) not found during internal listener setup.");
+   }
+
+   // الاستماع لأحداث اقتراحات الدردشة
+   this.shadowRoot.addEventListener('suggestion-clicked', (e) => {
+     // تأكد من أن chatInput موجود
+     if(this.chatInput) {
+       const { suggestion } = e.detail;
+       this.chatInput.value = suggestion;
+       this._autoResizeTextarea();
+       this.sendButton.disabled = false; // يجب تفعيل الزر عند اختيار اقتراح
+       this._sendMessage();
+     }
+   });
+
+   // إضافة مستمع للتمرير لإخفاء الهيدر (إذا كنت تستخدمه)
+   // لاحظ أن profileHeader قد يحتاج لإعادة الاستعلام عنه إذا كان داخل الجزء المعاد رسمه
+   // إذا كان profileHeader خارج messagesContainer في الـ DOM، قد لا تحتاج لإعادة ربط هذا
+   // ولكن إذا كان يتم إعادة إنشائه، ستحتاج لإعادة ربط مستمع التمرير.
+   // في الكود الحالي، messagesContainer يتم إعادة الاستعلام عنه، لذا المستمع يجب إعادة ربطه.
+   this.messagesContainer.addEventListener('scroll', this._handleScroll.bind(this));
+
+
+   // --- نهاية الكود المنقول ---
+
+    // قم بتعطيل زر الإرسال مبدئيًا بعد إعادة الربط (لأن حقل الإدخال فارغ)
+    if (this.sendButton) {
+        this.sendButton.disabled = true;
+    }
+    // أعد ضبط ارتفاع حقل الإدخال
+    if (this.chatInput) {
+        this.chatInput.style.height = 'auto';
+    }
+ }
+
 
   attributeChangedCallback(name, oldValue, newValue) {
     // تحديث المكون عند تغيير السمات
@@ -996,6 +1108,8 @@ _render() {
     }
   }
 }
+
+
 
 // تسجيل المكون
 customElements.define('chat-widget', ChatWidget);
