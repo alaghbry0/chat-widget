@@ -5376,7 +5376,7 @@
          <div class="top-bar">
            <chat-avatar
              size="24px"
-             src="${this.getAttribute('avatar') || 'docs/profile.png'}"
+             src="${this.getAttribute('avatar') || 'https://alaghbry0.github.io/chat-widget/profile.png'}"
              fallback="${(this.getAttribute('title') || 'Bot').charAt(0)}"
              bg-color="var(--primary-color)">
            </chat-avatar>
@@ -5401,7 +5401,7 @@
            <chat-avatar
              class="welcome-avatar"
              size="75px"
-             src="${this.getAttribute('avatar') || 'docs/profile.png'}"
+             src="${this.getAttribute('avatar') || './profile.png'}"
              fallback="${(this.getAttribute('title') || 'Bot').charAt(0)}"
              bg-color="var(--primary-color)">
            </chat-avatar>
