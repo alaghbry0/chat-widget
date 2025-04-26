@@ -4067,7 +4067,7 @@
 
     connectedCallback() {
       const sender = this.getAttribute('sender') || 'bot';
-      const avatar = this.getAttribute('avatar') || 'docs/profile.png';
+      const avatar = this.getAttribute('avatar') || 'https://alaghbry0.github.io/chat-widget/profile.png';
       const messageId = this.getAttribute('message-id') || '';
 
       // قراءة محتوى Markdown الخام
@@ -5401,7 +5401,7 @@
            <chat-avatar
              class="welcome-avatar"
              size="75px"
-             src="${this.getAttribute('avatar') || './profile.png'}"
+             src="${this.getAttribute('avatar') || 'https://alaghbry0.github.io/chat-widget/profile.png'}"
              fallback="${(this.getAttribute('title') || 'Bot').charAt(0)}"
              bg-color="var(--primary-color)">
            </chat-avatar>
