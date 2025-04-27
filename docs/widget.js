@@ -10,7 +10,7 @@
       const style = document.createElement('style');
       style.textContent = `
       :host {
-      contain: strict;
+       isolation: isolate;
       isolation: isolate;
       position: relative;
       z-index: 0;
@@ -6098,3 +6098,4 @@
   }
 
 })();
+//# sourceMappingURL=widget.js.map
