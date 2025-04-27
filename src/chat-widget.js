@@ -237,6 +237,7 @@ const styles = `
     width: 100%;
     min-height: 11px;
     max-height: 150px;
+    word-spacing: 0.01em;
     border: none;
     outline: none;
     background: transparent;
@@ -257,7 +258,7 @@ const styles = `
 
   .chat-input::-webkit-scrollbar-thumb {
     background-color: var(--border-color);
-    border-radius: 4px;
+    border-radius: 2px;
   }
 
 
@@ -1031,11 +1032,14 @@ _render() {
 
    // الإرسال عند الضغط على Enter (بدون Shift)
    this.chatInput.addEventListener('keydown', (e) => {
-     if (e.key === 'Enter' && !e.shiftKey) {
-       e.preventDefault();
-       this._sendMessage();
-     }
-   });
+  // فقط Ctrl+Enter يرسل الرسالة
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    this._sendMessage();
+  }
+  // Pressing plain Enter → يدرج سطرًا جديدًا
+});
+
 
    // التكبير التلقائي لحقل الإدخال وتمكين/تعطيل زر الإرسال
    this.chatInput.addEventListener('input', () => {
