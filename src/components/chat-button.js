@@ -7,6 +7,9 @@ class ChatButton extends HTMLElement {
     const style = document.createElement('style');
     style.textContent = `
       :host {
+      isolation: isolate;
+      position: relative;
+      z-index: 0;
         display: block;
         --primary-color: linear-gradient(135deg, #63a3f7 0%, #2F80ED 100%);
 --hover-effect: brightness(1.09) saturate(1.2);
