@@ -237,7 +237,9 @@ const styles = `
     width: 100%;
     min-height: 11px;
     max-height: 150px;
-    word-spacing: 0.01em;
+    word-spacing: -0.17em !important;
+    white-space: pre-wrap;
+    letter-spacing: -0.02em;
     border: none;
     outline: none;
     background: transparent;
