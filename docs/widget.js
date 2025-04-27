@@ -95,7 +95,7 @@
         .chat-bubble {
           width: 63px;
           height: 63px;
-          bottom: var(--mobile-bottom, 40px);
+          bottom: var(--mobile-bottom, 60px);
           right: var(--mobile-right, 20px);
           left: var(--mobile-left, auto);
         }
