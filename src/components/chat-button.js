@@ -28,7 +28,7 @@ class ChatButton extends HTMLElement {
         justify-content: center;
         cursor: pointer;
         transition: transform 0.3s, background-color 0.3s;
-        z-index: 100;
+        z-index: 9990;
       }
 
       :host([position="bottom-left"]) .chat-bubble {
