@@ -8,6 +8,7 @@ class ChatMessage extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
     this._content = '';
+    this.isBotResponding = false;
   }
 
   connectedCallback() {

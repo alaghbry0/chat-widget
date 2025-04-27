@@ -12,7 +12,7 @@ window.ChatWidget = {
       welcomeMessage: 'مرحبًا بك! كيف يمكنني مساعدتك اليوم؟',
       apiUrl: 'https://exadoo-rxr9.onrender.com/bot/chat/stream',
       direction: 'rtl',
-      avatar: '',
+      avatar: 'https://alaghbry0.github.io/chat-widget/profile.png',
       title: 'Exaado Assistant',
       subtitle: 'Our virtual agent is here to help you',
       poweredBy: 'Powered by EXAADO:exaado.com'

@@ -401,6 +401,7 @@ class ChatWidget extends HTMLElement {
     this.isOpen = false;
     this.messages = [];
     this.isTyping = false;
+    this.isFetchingWelcome = false;
     this.sessionId = this._generateSessionId();
     this.headerCollapsed = false;
     this.lastScrollPosition = 0;
@@ -417,35 +418,43 @@ class ChatWidget extends HTMLElement {
   }
 
     _resetChat() {
-   console.log('🔄 Resetting chat to initial state...');
+  console.log('🔄 Resetting chat to initial state...');
 
-   // 1. مسح مصفوفة الرسائل
-   this.messages = [];
+  // Close any open typing indicators before reset
+  this._hideTypingIndicator();
 
-   // 2. إنشاء معرف جلسة جديد
-   this.sessionId = this._generateSessionId(true);
+  // Clear the fetch flag in case it was stuck
+  this.isFetchingWelcome = false;
 
-   // 3. إعادة بناء الواجهة بالكامل
-   this._render(); // يعيد بناء العناصر الداخلية
+  // 1. مسح مصفوفة الرسائل
+  this.messages = [];
 
-   // 4. استعادة حالة الرؤية
-   if (this.isOpen) {
-     if (this.chatContainer) {
-       this.chatContainer.classList.add('open');
-       console.log('Restored .open class after reset.');
-     } else {
-       console.error("Chat container not found immediately after render in _resetChat.");
-     }
-   }
+  // 2. إنشاء معرف جلسة جديد
+  this.sessionId = this._generateSessionId(true);
 
-   // --- 5. إعادة ربط المستمعات الداخلية بالعناصر الجديدة ---
-   this._setupInternalListeners();
+  // 3. إعادة بناء الواجهة بالكامل
+  this._render(); // يعيد بناء العناصر الداخلية
 
-   // 6. إعادة إضافة رسالة الترحيب النصية والاقتراحات
-   this._setupInitialChatState();
+  // 4. استعادة حالة الرؤية
+  if (this.isOpen) {
+    if (this.chatContainer) {
+      this.chatContainer.classList.add('open');
+      console.log('Restored .open class after reset.');
+    } else {
+      console.error("Chat container not found immediately after render in _resetChat.");
+    }
+  }
 
-   console.log("Chat reset complete.");
- }
+  // 5. إعادة ربط المستمعات الداخلية بالعناصر الجديدة
+  this._setupInternalListeners();
+
+  // 6. استدعاء دالة جلب بيانات الترحيب بوضع اولي (true)
+  setTimeout(() => {
+    this._fetchWelcomeData(true);
+  }, 1500); // Increased delay for better visibility of typing indicator
+
+  console.log("Chat reset complete.");
+}
   // تعديل دالة _render في class ChatWidget
 
   _initialize() {
@@ -457,10 +466,16 @@ class ChatWidget extends HTMLElement {
    this._render(); // 1. بناء الواجهة الأولية
    this._setupComponentListeners(); // 2. ربط المستمعات الخارجية (مرة واحدة)
    this._setupInternalListeners(); // 3. ربط المستمعات الداخلية (لأول مرة)
-   this._setupInitialChatState(); // 4. إضافة رسالة الترحيب والاقتراحات
+
+   // ملاحظة: نقوم بإزالة _setupInitialChatState وبدلاً من ذلك استخدام _fetchWelcomeData
 
    console.log("Chat widget initialized.");
- }
+
+   // جلب بيانات الترحيب بعد التهيئة مباشرة
+   setTimeout(() => {
+     this._fetchWelcomeData(true); // true تعني أنها الدعوة الأولية
+   }, 300);
+}
 
 
 _render() {
@@ -685,7 +700,7 @@ _render() {
 
   // دائماً إضافة صورة الـ avatar مع رسائل البوت
   if (message.sender === 'bot') {
-    messageEl.setAttribute('avatar', this.getAttribute('avatar') || '');
+    messageEl.setAttribute('avatar', this.getAttribute('avatar') || 'https://alaghbry0.github.io/chat-widget/profile.png');
     messageEl.setAttribute('show-avatar', 'true');  // سمة جديدة للتحكم في إظهار الصورة
   }
 
@@ -881,24 +896,36 @@ _render() {
   }
 
   _showTypingIndicator() {
-    this.isTyping = true;
-
-    const typingEl = document.createElement('typing-indicator');
-    typingEl.setAttribute('avatar', this.getAttribute('avatar') || '');
-    typingEl.id = 'typing-indicator';
-
-    this.messagesContainer.appendChild(typingEl);
-    this._scrollToBottom();
+  // First remove any existing indicator to prevent duplicates
+  const existingIndicator = this.shadowRoot.querySelector('#typing-indicator');
+  if (existingIndicator) {
+    existingIndicator.remove();
   }
 
-  _hideTypingIndicator() {
-    this.isTyping = false;
+  // Now set flag and create new indicator
+  this.isTyping = true;
 
-    const typingEl = this.shadowRoot.querySelector('#typing-indicator');
-    if (typingEl) {
-      typingEl.remove();
-    }
+  const typingEl = document.createElement('typing-indicator');
+  typingEl.setAttribute('avatar', this.getAttribute('avatar') || '');
+  typingEl.id = 'typing-indicator';
+
+  this.messagesContainer.appendChild(typingEl);
+  this._scrollToBottom();
+
+  console.log('💬 Typing indicator shown');
+}
+
+_hideTypingIndicator() {
+  const typingEl = this.shadowRoot.querySelector('#typing-indicator');
+  if (typingEl) {
+    typingEl.remove();
+    console.log('💬 Typing indicator hidden');
   }
+
+  this.isTyping = false;
+}
+
+
 
   _clearChat() {
     // إزالة جميع الرسائل
@@ -930,59 +957,28 @@ _render() {
     }, 300);
   }
 
-   _setupInitialChatState() {
-   // إضافة رسالة الترحيب والاقتراحات بعد تأخير بسيط
-   setTimeout(() => {
-     // التأكد من أن حاوية الرسائل موجودة بعد إعادة الرسم المحتملة
-     if (!this.messagesContainer) {
-       console.error("Messages container not found after reset.");
-       return;
-     }
-
-     // إزالة أي رسالة ترحيب نصية قديمة أو اقتراحات إذا وجدت (احتياطي)
-     const existingWelcomeMsg = this.messagesContainer.querySelector('chat-message[sender="bot"]');
-     const existingSuggestions = this.messagesContainer.querySelector('chat-suggestions');
-     if (existingWelcomeMsg && this.messages.length === 0) existingWelcomeMsg.remove(); // فقط إذا كانت الرسائل فارغة
-     if (existingSuggestions) existingSuggestions.remove();
-
-
-     // --- الجزء المنقول من _initialize ---
-     // إضافة رسالة الترحيب أولاً (كنص)
-     this._addMessage({
-       content: this.getAttribute('welcome-message') || 'مرحبًا بك! كيف يمكنني مساعدتك اليوم؟',
-       sender: 'bot'
-     });
-
-     // --- إضافة الاقتراحات هنا ---
-     const suggestionsEl = document.createElement('chat-suggestions');
-     suggestionsEl.suggestions = [
-       'ما هي خدماتكم؟',
-       'كيف يمكنني التواصل مع الدعم؟',
-      'كيف يمكنني الاشتراك في كورس الزمني؟'
-       // يمكنك تحديث هذه الاقتراحات أو جعلها ديناميكية إذا أردت
-     ];
-     // تأكد من أن الرسالة الترحيبية تم إضافتها قبل إضافة الاقتراحات
-     // قد تحتاج لتأخير بسيط آخر أو استخدام Promise إذا كانت _addMessage غير متزامنة تمامًا
-     // لكن بما أنها متزامنة هنا، يمكن إضافتها مباشرة
-     this.messagesContainer.appendChild(suggestionsEl);
-     this.suggestionsElement = suggestionsEl; // --- تخزين المرجع ---
-     this._scrollToBottom(); // التمرير للأسفل بعد إضافة الاقتراحات
-     // --- نهاية الجزء المنقول ---
-
-   }, 300); // نفس التأخير المستخدم سابقاً
- }
 
   toggleChat() {
-    console.log('🔘 toggleChat fired! isOpen=', this.isOpen);
-    this.isOpen = !this.isOpen;
-    if (this.isOpen)  {
+  console.log('🔘 toggleChat fired! isOpen=', this.isOpen);
+  this.isOpen = !this.isOpen;
+
+  if (this.isOpen) {
     this.chatContainer.classList.add('open');
     localStorage.setItem('chatWidgetOpen', 'true');
+
+    // Check if this is the first time opening and messages are empty
+    if (this.messages.length === 0 && !this.isFetchingWelcome) {
+      // Ensure sufficient delay for the UI to be ready before fetching
+      setTimeout(() => {
+        this._fetchWelcomeData(true);
+      }, 500); // Increased delay for better UI visibility
+    }
   } else {
     this.chatContainer.classList.remove('open');
     localStorage.setItem('chatWidgetOpen', 'false');
   }
 }
+
 
   _scrollToBottom() {
     setTimeout(() => {
@@ -1006,14 +1002,141 @@ _render() {
 
 
   connectedCallback() {
-    // التحقق من حالة النافذة المحفوظة
-    const savedState = localStorage.getItem('chatWidgetOpen');
-    if (savedState === 'true') {
-      setTimeout(() => this.toggleChat(), 300);
-    }
+  console.log('🔄 Component connected to DOM');
+
+  // التحقق من حالة النافذة المحفوظة
+  const savedState = localStorage.getItem('chatWidgetOpen');
+  if (savedState === 'true') {
+    setTimeout(() => this.toggleChat(), 300);
+  }
+}
+
+
+_fetchWelcomeData(isInitialCall = false) {
+  // Prevent multiple concurrent fetches
+  if (this.isFetchingWelcome) {
+    console.log('Already fetching welcome data, skipping duplicate request');
+    return;
   }
 
+  this.isFetchingWelcome = true;
+  console.log(`📥 Fetching welcome message and FAQ from server... (initial: ${isInitialCall})`);
 
+  // Get API URL
+  const apiBaseUrl = this.getAttribute('api-url') || '';
+  const baseUrl = apiBaseUrl.split('/').slice(0, 3).join('/');
+  const welcomeEndpoint = `${baseUrl}/bot/welcome`;
+
+  console.log(`📤 Fetching from endpoint: ${welcomeEndpoint}`);
+
+  // Show typing indicator only if chat is empty or this is initial call
+  if ((this.messages.length === 0 || isInitialCall) && !this.isTyping) {
+    // Important: Show typing indicator BEFORE the fetch request
+    this._showTypingIndicator();
+  }
+
+  // Add a small delay to ensure the typing indicator is visible
+  setTimeout(() => {
+    fetch(welcomeEndpoint)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch welcome data: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('✅ Welcome data received:', data);
+
+        // Process the data BEFORE hiding the typing indicator
+        // This ensures the indicator stays visible until we're ready to show messages
+
+        // Clear current messages only if this is initial call or chat is empty
+        if (this.messages.length === 0 || isInitialCall) {
+          // Remove any previous welcome messages
+          const welcomeMessages = this.messagesContainer.querySelectorAll('chat-message');
+          welcomeMessages.forEach(msg => msg.remove());
+
+          // Remove any previous suggestions
+          const oldSuggestions = this.messagesContainer.querySelectorAll('chat-suggestions');
+          oldSuggestions.forEach(sugg => sugg.remove());
+
+          // Reset messages array
+          this.messages = [];
+
+          // NOW hide the typing indicator after all preparation is done
+          this._hideTypingIndicator();
+
+          // Add welcome message from fetched data
+          if (data.welcome_message) {
+            this._addMessage({
+              content: data.welcome_message,
+              sender: 'bot'
+            });
+          }
+
+          // Add FAQ suggestions if available
+          if (data.faq_questions) {
+            try {
+              // Parse JSON string to array (if it's a string)
+              const faqQuestions = typeof data.faq_questions === 'string'
+                ? JSON.parse(data.faq_questions)
+                : data.faq_questions;
+
+              if (Array.isArray(faqQuestions) && faqQuestions.length > 0) {
+                console.log('📋 Adding FAQ suggestions:', faqQuestions);
+                const suggestionsEl = document.createElement('chat-suggestions');
+                suggestionsEl.suggestions = faqQuestions;
+                this.messagesContainer.appendChild(suggestionsEl);
+                this.suggestionsElement = suggestionsEl;
+              }
+            } catch (error) {
+              console.error('❌ Error parsing FAQ questions:', error, data.faq_questions);
+            }
+          }
+
+          this._scrollToBottom();
+        } else {
+          // If we're not updating the UI, still hide the typing indicator
+          this._hideTypingIndicator();
+          console.log('ℹ️ Skipped updating welcome message since chat already has messages');
+        }
+
+        // Reset the fetching flag when done
+        this.isFetchingWelcome = false;
+      })
+      .catch(error => {
+        console.error('❌ Error fetching welcome data:', error);
+
+        // Use default welcome message only if chat is empty or this is initial call
+        if (this.messages.length === 0 || isInitialCall) {
+          // Hide typing indicator just before showing the default message
+          this._hideTypingIndicator();
+
+          this._addMessage({
+            content: this.getAttribute('welcome-message') || 'مرحبًا بك! كيف يمكنني مساعدتك اليوم؟',
+            sender: 'bot'
+          });
+
+          // Add default suggestions
+          const suggestionsEl = document.createElement('chat-suggestions');
+          suggestionsEl.suggestions = [
+            'ما هي خدماتكم؟',
+            'كيف يمكنني التواصل مع الدعم؟',
+            'كيف يمكنني الاشتراك في كورس الزمني؟'
+          ];
+          this.messagesContainer.appendChild(suggestionsEl);
+          this.suggestionsElement = suggestionsEl;
+          this._scrollToBottom();
+        } else {
+          // If we're not updating the UI, still hide the typing indicator
+          this._hideTypingIndicator();
+        }
+
+        // Reset the fetching flag on error too
+        this.isFetchingWelcome = false;
+      });
+  }, 300); // Small delay to ensure the typing indicator is visible
+}
 
  // ===== دالة جديدة لربط الأحداث الداخلية =====
  _setupInternalListeners() {
@@ -1029,8 +1152,14 @@ _render() {
 
    // زر إرسال الرسالة
    this.sendButton.addEventListener('click', () => {
-     this._sendMessage();
-   });
+  if (this.isBotResponding) {
+    // If bot is responding, stop the response
+    this._stopBotResponse();
+  } else {
+    // Otherwise send a new message
+    this._sendMessage();
+  }
+});
 
    // الإرسال عند الضغط على Enter (بدون Shift)
    this.chatInput.addEventListener('keydown', (e) => {
@@ -1072,15 +1201,26 @@ _render() {
 
    // الاستماع لأحداث اقتراحات الدردشة
    this.shadowRoot.addEventListener('suggestion-clicked', (e) => {
-     // تأكد من أن chatInput موجود
-     if(this.chatInput) {
-       const { suggestion } = e.detail;
-       this.chatInput.value = suggestion;
-       this._autoResizeTextarea();
-       this.sendButton.disabled = false; // يجب تفعيل الزر عند اختيار اقتراح
-       this._sendMessage();
-     }
-   });
+  // Prevent multiple submissions of the same suggestion
+  e.stopPropagation(); // Stop event bubbling
+
+  // Check if already processing this suggestion (prevent double processing)
+  if (this.isProcessingSuggestion) return;
+  this.isProcessingSuggestion = true;
+
+  // Set timeout to reset the flag (protection against double clicks)
+  setTimeout(() => {
+    this.isProcessingSuggestion = false;
+  }, 1000); // 1 second lockout
+
+  if (this.chatInput) {
+    const { suggestion } = e.detail;
+    this.chatInput.value = suggestion;
+    this._autoResizeTextarea();
+    this.sendButton.disabled = false;
+    this._sendMessage();
+  }
+});
 
    // إضافة مستمع للتمرير لإخفاء الهيدر (إذا كنت تستخدمه)
    // لاحظ أن profileHeader قد يحتاج لإعادة الاستعلام عنه إذا كان داخل الجزء المعاد رسمه
@@ -1119,5 +1259,6 @@ _render() {
 
 // تسجيل المكون
 customElements.define('chat-widget', ChatWidget);
+
 
 export default ChatWidget;

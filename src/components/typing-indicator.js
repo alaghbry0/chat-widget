@@ -8,7 +8,7 @@ class TypingIndicator extends HTMLElement {
   }
 
   connectedCallback() {
-    const avatar = this.getAttribute('avatar') || '';
+    const avatar = this.getAttribute('avatar') || 'https://alaghbry0.github.io/chat-widget/profile.png';
     const direction = document.dir || this.getAttribute('direction') || 'rtl';
 
     // إعداد CSS
