@@ -7,6 +7,7 @@ class ChatButton extends HTMLElement {
     const style = document.createElement('style');
     style.textContent = `
       :host {
+      contain: strict;
       isolation: isolate;
       position: relative;
       z-index: 0;
@@ -31,7 +32,7 @@ class ChatButton extends HTMLElement {
         justify-content: center;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 8999;
+        z-index: 8900 !important;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         border: none;
         overflow: hidden;

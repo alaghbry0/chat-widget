@@ -246,3 +246,7 @@ input, textarea {
 * {
   transform-style: flat;
 }
+
+body.modal-open chat-button {
+  display: none !important;
+}
