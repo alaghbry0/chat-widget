@@ -35,7 +35,7 @@
         justify-content: center;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 8900 !important;
+        z-index: 905 !important;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         border: none;
         overflow: hidden;
@@ -4959,7 +4959,7 @@
 
     font-family: Roboto, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     position: fixed;
-    z-index: 9999;
+    z-index: 899;
     box-sizing: border-box;
   }
 
@@ -4997,7 +4997,7 @@
   }
 
   .chat-container {
-    z-index: 9999;
+    z-index: 899;
     position: fixed;
     display: flex;
     flex-direction: column;

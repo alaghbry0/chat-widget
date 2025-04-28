@@ -27,7 +27,7 @@ const styles = `
 
     font-family: Roboto, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     position: fixed;
-    z-index: 9999;
+    z-index: 899;
     box-sizing: border-box;
   }
 
@@ -65,7 +65,7 @@ const styles = `
   }
 
   .chat-container {
-    z-index: 9999;
+    z-index: 899;
     position: fixed;
     display: flex;
     flex-direction: column;
